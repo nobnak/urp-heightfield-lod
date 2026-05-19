@@ -4,6 +4,7 @@ Texture2D<float> _Curvature;
 StructuredBuffer<uint> _PrevLod;
 RWStructuredBuffer<uint> _Lod;
 uint2 _ChunkCount;
+uint2 _TexSize;
 uint _ChunkPixelSize;
 float _LodUpHigh;
 float _LodDownHigh;
@@ -12,14 +13,32 @@ float _LodDownMid;
 float _LodUpLow;
 float _LodDownLow;
 
+bool IsTextureBorder(uint2 px)
+{
+    return px.x == 0 || px.y == 0
+        || px.x >= _TexSize.x - 1 || px.y >= _TexSize.y - 1;
+}
+
 float MaxCurvatureInChunk(uint2 chunkCoord)
 {
     uint2 basePx = chunkCoord * _ChunkPixelSize;
     float m = 0;
+    bool any = false;
     for (uint y = 0; y < _ChunkPixelSize; y++)
     {
         for (uint x = 0; x < _ChunkPixelSize; x++)
-            m = max(m, _Curvature[basePx + uint2(x, y)]);
+        {
+            uint2 px = basePx + uint2(x, y);
+            if (IsTextureBorder(px))
+                continue;
+            m = max(m, _Curvature[px]);
+            any = true;
+        }
+    }
+    if (!any)
+    {
+        uint2 c = min(basePx + _ChunkPixelSize / 2, _TexSize - 1);
+        m = _Curvature[c];
     }
     return m;
 }

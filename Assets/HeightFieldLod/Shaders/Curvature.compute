@@ -6,11 +6,18 @@ uint2 _TexSize;
 float _InvTexelSize;
 float _HeightScale;
 
-float SampleH(int2 p)
+int2 MirrorCoord(int2 p, int2 maxP)
 {
-    int2 maxP = int2(_TexSize) - 1;
-    p = clamp(p, int2(0, 0), maxP);
-    return _Height[p] * _HeightScale;
+    if (p.x < 0) p.x = -p.x;
+    else if (p.x > maxP.x) p.x = 2 * maxP.x - p.x;
+    if (p.y < 0) p.y = -p.y;
+    else if (p.y > maxP.y) p.y = 2 * maxP.y - p.y;
+    return p;
+}
+
+float SampleH(int2 p, int2 offset, int2 maxP)
+{
+    return _Height[MirrorCoord(p + offset, maxP)] * _HeightScale;
 }
 
 [numthreads(8, 8, 1)]
@@ -20,8 +27,12 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         return;
 
     int2 p = int2(id.xy);
-    float h = SampleH(p);
-    float lap = abs(4.0 * h - SampleH(p + int2(-1, 0)) - SampleH(p + int2(1, 0))
-        - SampleH(p + int2(0, -1)) - SampleH(p + int2(0, 1))) * _InvTexelSize;
+    int2 maxP = int2(_TexSize) - 1;
+    float h = SampleH(p, int2(0, 0), maxP);
+    float lap = abs(4.0 * h
+        - SampleH(p, int2(-1, 0), maxP)
+        - SampleH(p, int2(1, 0), maxP)
+        - SampleH(p, int2(0, -1), maxP)
+        - SampleH(p, int2(0, 1), maxP)) * _InvTexelSize;
     _Curvature[p] = lap;
 }

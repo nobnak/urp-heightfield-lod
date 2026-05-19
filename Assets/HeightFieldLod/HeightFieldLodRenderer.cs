@@ -241,6 +241,7 @@ namespace HeightFieldLod
             _classifyShader.SetBuffer(_kClassify, "_PrevLod", _prevLodBuffer);
             _classifyShader.SetBuffer(_kClassify, "_Lod", _lodBuffer);
             _classifyShader.SetInts("_ChunkCount", _layout.ChunkCountX, _layout.ChunkCountY);
+            _classifyShader.SetInts("_TexSize", _layout.TexWidth, _layout.TexHeight);
             _classifyShader.SetInt("_ChunkPixelSize", HeightFieldLayout.ChunkPixelSize);
             _classifyShader.SetFloat("_LodUpHigh", _lodUpHigh);
             _classifyShader.SetFloat("_LodDownHigh", _lodDownHigh);
