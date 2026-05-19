@@ -347,13 +347,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 410087039}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.40821788, y: -0.23456968, z: 0.10938163, w: 0.8754261}
+  m_LocalRotation: {x: 0.21442412, y: -0.18370248, z: 0.13257022, w: 0.9501057}
   m_LocalPosition: {x: 4, y: 3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+  m_LocalEulerAnglesHint: {x: 27.139, y: -19.17, z: 11.219}
 --- !u!114 &410087042
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -591,8 +591,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 214067b9ccd05f242ac7d4c69bd6157a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: HeightFieldLod::HeightFieldLod.HeightFieldLodRenderer
-  _material: {fileID: 2100000, guid: 4704fdd337825924794bb30fd61aa5a2, type: 2}
-  _normalShader: {fileID: 0}
+  _material: {fileID: 2100000, guid: 660fcee1fbd74304b9e206e30fb0e0ec, type: 2}
+  _normalShader: {fileID: 7200000, guid: 3fd5845bf3e0e42469ea89c5c765dd98, type: 3}
   _curvatureShader: {fileID: 7200000, guid: 1655ced9a0d249f4897878af2fbf7aba, type: 3}
   _reductionShader: {fileID: 7200000, guid: 4b34b9b4393cdb140a8ba9b86cbbbc2a, type: 3}
   _classifyShader: {fileID: 7200000, guid: 4a562e269a1e3144c95edfb1d7bb9865, type: 3}
@@ -606,6 +606,7 @@ MonoBehaviour:
   _lodDownMid: 0.45
   _lodDownLow: 0.12
   _drawInSceneView: 1
+  _castShadows: 0
 --- !u!114 &1517204970
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -619,9 +620,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: HeightField::HeightField.SineHeightFieldSource
   _fillShader: {fileID: 7200000, guid: c8d9b14339132df4ca23ef03efce52cc, type: 3}
-  _amplitudeMeters: 1.5
+  _amplitudeMeters: 1
   _frequency: 1
-  _speed: 0.5
+  _speed: 0.1
 --- !u!4 &1517204971
 Transform:
   m_ObjectHideFlags: 0

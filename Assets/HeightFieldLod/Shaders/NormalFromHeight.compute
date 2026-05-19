@@ -27,12 +27,15 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     int2 p = int2(id.xy);
     int2 maxP = int2(_TexSize) - 1;
+    // Texture y+ => world +Y (see SineHeightFill / HeightFieldLayout). Surface z = -h, front normal -Z.
     float hL = SampleH(p, int2(-1, 0), maxP);
     float hR = SampleH(p, int2(1, 0), maxP);
-    float hD = SampleH(p, int2(0, -1), maxP);
-    float hU = SampleH(p, int2(0, 1), maxP);
+    float hS = SampleH(p, int2(0, -1), maxP); // smaller texture y (world -Y)
+    float hN = SampleH(p, int2(0, 1), maxP);  // larger texture y (world +Y)
     float px = max(_PixelWorld.x, 1e-6);
     float py = max(_PixelWorld.y, 1e-6);
-    float3 n = normalize(float3((hL - hR) * py, (hD - hU) * px, -2.0 * px * py));
+    float dhdx = (hR - hL) * 0.5;
+    float dhdy = (hN - hS) * 0.5;
+    float3 n = normalize(float3(-dhdx * py, dhdy * px, -px * py));
     _NormalMap[p] = float4(n * 0.5 + 0.5, 1.0);
 }

@@ -24,6 +24,7 @@ namespace HeightFieldLod
         [SerializeField] float _lodDownMid = 0.45f;
         [SerializeField] float _lodDownLow = 0.12f;
         [SerializeField] bool _drawInSceneView = true;
+        [SerializeField] bool _castShadows = true;
 
         HeightFieldLayout _layout;
         Camera _camera;
@@ -366,10 +367,11 @@ namespace HeightFieldLod
 
                 _mpb ??= new MaterialPropertyBlock();
                 _mpb.SetBuffer("_ChunkInstances", _instanceBuffers[lod]);
+                var castShadows = _castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off;
                 Graphics.DrawMeshInstancedIndirect(
                     _lodMeshes[lod], 0, _material, bounds,
                     _argsBuffers[lod], 0, _mpb,
-                    ShadowCastingMode.Off, true, gameObject.layer,
+                    castShadows, true, gameObject.layer,
                     camera, LightProbeUsage.Off, null);
             }
         }
@@ -380,7 +382,12 @@ namespace HeightFieldLod
                 return false;
             if (camera == _camera)
                 return true;
-            return _drawInSceneView && camera.cameraType == CameraType.SceneView;
+            if (_drawInSceneView && camera.cameraType == CameraType.SceneView)
+                return true;
+            // DrawMeshInstancedIndirect must run for shadow-map cameras too.
+            if (_castShadows && camera.targetTexture != null)
+                return true;
+            return false;
         }
 
         static void Dispatch2D(ComputeShader cs, int kernel, int w, int h)
