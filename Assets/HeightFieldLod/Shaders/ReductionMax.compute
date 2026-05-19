@@ -1,0 +1,19 @@
+#pragma kernel CSMain
+
+Texture2D<float> _Source;
+RWTexture2D<float> _Dest;
+uint2 _DestSize;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _DestSize.x || id.y >= _DestSize.y)
+        return;
+
+    uint2 p0 = id.xy * 2;
+    float m = _Source[p0];
+    m = max(m, _Source[p0 + uint2(1, 0)]);
+    m = max(m, _Source[p0 + uint2(0, 1)]);
+    m = max(m, _Source[p0 + uint2(1, 1)]);
+    _Dest[id.xy] = m;
+}

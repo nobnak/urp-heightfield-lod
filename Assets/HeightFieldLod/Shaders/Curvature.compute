@@ -1,0 +1,27 @@
+#pragma kernel CSMain
+
+Texture2D<float> _Height;
+RWTexture2D<float> _Curvature;
+uint2 _TexSize;
+float _InvTexelSize;
+float _HeightScale;
+
+float SampleH(int2 p)
+{
+    int2 maxP = int2(_TexSize) - 1;
+    p = clamp(p, int2(0, 0), maxP);
+    return _Height[p] * _HeightScale;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _TexSize.x || id.y >= _TexSize.y)
+        return;
+
+    int2 p = int2(id.xy);
+    float h = SampleH(p);
+    float lap = abs(4.0 * h - SampleH(p + int2(-1, 0)) - SampleH(p + int2(1, 0))
+        - SampleH(p + int2(0, -1)) - SampleH(p + int2(0, 1))) * _InvTexelSize;
+    _Curvature[p] = lap;
+}

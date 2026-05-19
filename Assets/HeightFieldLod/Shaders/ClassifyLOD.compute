@@ -1,0 +1,55 @@
+#pragma kernel CSMain
+
+Texture2D<float> _Curvature;
+StructuredBuffer<uint> _PrevLod;
+RWStructuredBuffer<uint> _Lod;
+uint2 _ChunkCount;
+uint _ChunkPixelSize;
+float _LodUpHigh;
+float _LodDownHigh;
+float _LodUpMid;
+float _LodDownMid;
+float _LodUpLow;
+float _LodDownLow;
+
+float MaxCurvatureInChunk(uint2 chunkCoord)
+{
+    uint2 basePx = chunkCoord * _ChunkPixelSize;
+    float m = 0;
+    for (uint y = 0; y < _ChunkPixelSize; y++)
+    {
+        for (uint x = 0; x < _ChunkPixelSize; x++)
+            m = max(m, _Curvature[basePx + uint2(x, y)]);
+    }
+    return m;
+}
+
+uint MetricToLod(float m)
+{
+    if (m > _LodUpHigh) return 0;
+    if (m > _LodUpMid) return 1;
+    if (m > _LodUpLow) return 2;
+    return 3;
+}
+
+float DownThreshold(uint lod)
+{
+    if (lod == 0) return _LodDownHigh;
+    if (lod == 1) return _LodDownMid;
+    return _LodDownLow;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _ChunkCount.x || id.y >= _ChunkCount.y)
+        return;
+
+    uint idx = id.y * _ChunkCount.x + id.x;
+    float m = MaxCurvatureInChunk(id.xy);
+    uint prev = _PrevLod[idx];
+    uint target = MetricToLod(m);
+    if (target < prev && m < DownThreshold(prev))
+        target = prev;
+    _Lod[idx] = target;
+}

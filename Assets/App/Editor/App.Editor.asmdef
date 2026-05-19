@@ -1,0 +1,20 @@
+{
+    "name": "App.Editor",
+    "rootNamespace": "App.Editor",
+    "references": [
+        "App",
+        "HeightField",
+        "HeightFieldLod"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

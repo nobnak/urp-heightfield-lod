@@ -1,0 +1,44 @@
+#pragma kernel CSMain
+
+StructuredBuffer<uint> _LodIn;
+RWStructuredBuffer<uint> _LodOut;
+uint2 _ChunkCount;
+
+uint LodAt(int2 c, uint selfLod)
+{
+    if (c.x < 0 || c.y < 0 || c.x >= (int)_ChunkCount.x || c.y >= (int)_ChunkCount.y)
+        return selfLod;
+    return _LodIn[c.y * _ChunkCount.x + c.x];
+}
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _ChunkCount.x || id.y >= _ChunkCount.y)
+        return;
+
+    uint idx = id.y * _ChunkCount.x + id.x;
+    uint lod = _LodIn[idx];
+    int2 ic = int2(id.xy);
+    uint minN = lod;
+    uint maxN = lod;
+    minN = min(minN, LodAt(ic + int2(-1, 0), lod));
+    maxN = max(maxN, LodAt(ic + int2(-1, 0), lod));
+    minN = min(minN, LodAt(ic + int2(1, 0), lod));
+    maxN = max(maxN, LodAt(ic + int2(1, 0), lod));
+    minN = min(minN, LodAt(ic + int2(0, -1), lod));
+    maxN = max(maxN, LodAt(ic + int2(0, -1), lod));
+    minN = min(minN, LodAt(ic + int2(0, 1), lod));
+    maxN = max(maxN, LodAt(ic + int2(0, 1), lod));
+
+    uint lo = minN > 0 ? minN - 1 : 0;
+    uint hi = maxN + 1;
+    if (lo > hi)
+    {
+        uint t = lo;
+        lo = hi;
+        hi = t;
+    }
+    lod = clamp(lod, lo, hi);
+    _LodOut[idx] = min(lod, 3u);
+}
