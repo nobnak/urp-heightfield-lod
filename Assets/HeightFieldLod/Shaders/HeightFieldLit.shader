@@ -3,9 +3,10 @@ Shader "HeightFieldLod/HeightFieldLit"
     Properties
     {
         _HeightTex ("Height", 2D) = "black" {}
-        _BaseColor ("Base Color", Color) = (0.35, 0.55, 0.4, 1)
-        _Specular ("Specular", Range(0, 1)) = 0.15
-        _Gloss ("Gloss", Range(1, 128)) = 32
+        [MainTexture] _BaseMap ("Base Map", 2D) = "white" {}
+        [MainColor] _BaseColor ("Base Color", Color) = (0.35, 0.55, 0.4, 1)
+        _SpecColor ("Specular", Color) = (0.15, 0.15, 0.15, 1)
+        _Smoothness ("Smoothness", Range(0, 1)) = 0.4
     }
     SubShader
     {
@@ -18,95 +19,95 @@ Shader "HeightFieldLod/HeightFieldLit"
             Cull Back
 
             HLSLPROGRAM
+            #pragma target 2.0
             #pragma vertex Vert
             #pragma fragment Frag
-            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile_instancing
             #pragma instancing_options procedural:SetupProcedural
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
+            #pragma multi_compile_fragment _ _SHADOWS_SOFT
+            #pragma shader_feature_local_fragment _SPECULARHIGHLIGHTS_OFF
 
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #define _SPECULAR_SETUP 1
+
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/SurfaceData.hlsl"
+            #include "HeightFieldLitCommon.hlsl"
 
-            TEXTURE2D(_HeightTex);
-            SAMPLER(sampler_HeightTex);
+            TEXTURE2D(_BaseMap);
+            SAMPLER(sampler_BaseMap);
 
-            float4 _BaseColor;
-            float _Specular;
-            float _Gloss;
+            float4 _BaseMap_ST;
+            half4 _BaseColor;
+            half4 _SpecColor;
+            half _Smoothness;
 
-            StructuredBuffer<float4> _ChunkInstances;
-            float4 _WorldScaleCenter;
-            float4 _UvScaleOffset;
-
-            void SetupProcedural()
+            Light GetHeightFieldMainLight(float3 positionWS)
             {
-            #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-                uint i = unity_InstanceID * 2;
-                _WorldScaleCenter = _ChunkInstances[i];
-                _UvScaleOffset = _ChunkInstances[i + 1];
+            #if defined(MAIN_LIGHT_CALCULATE_SHADOWS)
+                Light light = GetMainLight(TransformWorldToShadowCoord(positionWS));
+            #else
+                Light light = GetMainLight();
             #endif
+                if (light.distanceAttenuation < 0.5)
+                    light.distanceAttenuation = 1.0;
+                return light;
             }
 
-            struct Attributes
+            HFVaryings Vert(HFAttributes v)
             {
-                float3 positionOS : POSITION;
-                float3 normalOS : NORMAL;
-                float2 uv : TEXCOORD0;
-                UNITY_VERTEX_INPUT_INSTANCE_ID
-            };
-
-            struct Varyings
-            {
-                float4 positionCS : SV_POSITION;
-                float3 positionWS : TEXCOORD0;
-                float3 normalWS : TEXCOORD1;
-                UNITY_VERTEX_INPUT_INSTANCE_ID
-            };
-
-            Varyings Vert(Attributes v)
-            {
-                Varyings o;
-                UNITY_SETUP_INSTANCE_ID(v);
-                UNITY_TRANSFER_INSTANCE_ID(v, o);
-            #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-                SetupProcedural();
-            #else
-                _WorldScaleCenter = float4(1, 1, 0, 0);
-                _UvScaleOffset = float4(1, 1, 0, 0);
-            #endif
-
-                float2 uv = v.uv * _UvScaleOffset.xy + _UvScaleOffset.zw;
-                float h = SAMPLE_TEXTURE2D_LOD(_HeightTex, sampler_HeightTex, uv, 0).r;
-                float2 worldXY = (v.positionOS.xy - 0.5) * _WorldScaleCenter.xy + _WorldScaleCenter.zw;
-                float3 positionWS = float3(worldXY.x, worldXY.y, v.positionOS.z - h);
-
-                float2 duv = _UvScaleOffset.xy / 32.0;
-                float hL = SAMPLE_TEXTURE2D_LOD(_HeightTex, sampler_HeightTex, uv - float2(duv.x, 0), 0).r;
-                float hR = SAMPLE_TEXTURE2D_LOD(_HeightTex, sampler_HeightTex, uv + float2(duv.x, 0), 0).r;
-                float hD = SAMPLE_TEXTURE2D_LOD(_HeightTex, sampler_HeightTex, uv - float2(0, duv.y), 0).r;
-                float hU = SAMPLE_TEXTURE2D_LOD(_HeightTex, sampler_HeightTex, uv + float2(0, duv.y), 0).r;
-                float3 normalWS = normalize(float3(hL - hR, hD - hU, -1.0));
-
-                o.positionWS = positionWS;
-                o.normalWS = normalWS;
-                o.positionCS = TransformWorldToHClip(positionWS);
+                HFVaryings o = HFVert(v);
+                o.baseUv = TRANSFORM_TEX(float2(o.positionWS.x, o.positionWS.y), _BaseMap);
                 return o;
             }
 
-            half4 Frag(Varyings i) : SV_Target
+            half4 Frag(HFVaryings i) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(i);
-                Light mainLight = GetMainLight();
-                float3 n = normalize(i.normalWS);
-                float3 viewDir = normalize(GetWorldSpaceViewDir(i.positionWS));
-                float3 l = mainLight.direction;
-                float ndl = saturate(dot(n, l));
-                float3 diff = _BaseColor.rgb * mainLight.color * ndl;
-                float3 halfDir = normalize(l + viewDir);
-                float spec = pow(saturate(dot(n, halfDir)), _Gloss) * _Specular;
-                float3 col = diff + spec * mainLight.color;
-                return half4(col, 1);
+
+                SurfaceData surfaceData = (SurfaceData)0;
+                surfaceData.albedo = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, i.baseUv).rgb * _BaseColor.rgb;
+                surfaceData.alpha = 1;
+                surfaceData.metallic = 0;
+                surfaceData.specular = _SpecColor.rgb;
+                surfaceData.smoothness = _Smoothness;
+                surfaceData.normalTS = half3(0, 0, 1);
+                surfaceData.occlusion = 1;
+                surfaceData.emission = 0;
+
+                BRDFData brdfData;
+                InitializeBRDFData(surfaceData, brdfData);
+
+                float3 normalWS = NormalizeNormalPerPixel(SampleHeightFieldNormalWS(i.heightUv));
+                float3 viewDirWS = GetWorldSpaceNormalizeViewDir(i.positionWS);
+                Light mainLight = GetHeightFieldMainLight(i.positionWS);
+
+            #ifdef _SPECULARHIGHLIGHTS_OFF
+                bool specularHighlightsOff = true;
+            #else
+                bool specularHighlightsOff = false;
+            #endif
+                half3 color = LightingPhysicallyBased(brdfData, mainLight, normalWS, viewDirWS, specularHighlightsOff);
+                return half4(color, 1);
             }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "DepthNormals"
+            Tags { "LightMode" = "DepthNormals" }
+            ZWrite On
+            Cull Back
+
+            HLSLPROGRAM
+            #pragma target 2.0
+            #pragma vertex DepthNormalsVertex
+            #pragma fragment DepthNormalsFragment
+            #pragma multi_compile_instancing
+            #pragma instancing_options procedural:SetupProcedural
+
+            #include "HeightFieldLitDepthNormalsPass.hlsl"
             ENDHLSL
         }
     }

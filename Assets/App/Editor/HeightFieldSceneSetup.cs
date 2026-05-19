@@ -35,6 +35,8 @@ namespace App.Editor
 
             var fill = AssetDatabase.LoadAssetAtPath<ComputeShader>(
                 "Assets/HeightField/Shaders/SineHeightFill.compute");
+            var normalFromHeight = AssetDatabase.LoadAssetAtPath<ComputeShader>(
+                "Assets/HeightFieldLod/Shaders/NormalFromHeight.compute");
             var curvature = AssetDatabase.LoadAssetAtPath<ComputeShader>(
                 "Assets/HeightFieldLod/Shaders/Curvature.compute");
             var reduction = AssetDatabase.LoadAssetAtPath<ComputeShader>(
@@ -52,6 +54,7 @@ namespace App.Editor
             var mat = litShader != null ? new Material(litShader) : null;
             var soLod = new SerializedObject(lod);
             soLod.FindProperty("_material").objectReferenceValue = mat;
+            soLod.FindProperty("_normalShader").objectReferenceValue = normalFromHeight;
             soLod.FindProperty("_curvatureShader").objectReferenceValue = curvature;
             soLod.FindProperty("_reductionShader").objectReferenceValue = reduction;
             soLod.FindProperty("_classifyShader").objectReferenceValue = classify;

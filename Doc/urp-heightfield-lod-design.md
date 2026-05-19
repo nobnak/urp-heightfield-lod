@@ -1,5 +1,7 @@
 # urp-heightfield-lod
 
+> Japanese: [urp-heightfield-lod-design.ja.md](urp-heightfield-lod-design.ja.md)
+
 ## Overview
 
 URP-based adaptive heightfield rendering for orthographic cameras:

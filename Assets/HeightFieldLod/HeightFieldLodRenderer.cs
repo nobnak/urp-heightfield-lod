@@ -9,6 +9,7 @@ namespace HeightFieldLod
     public sealed class HeightFieldLodRenderer : MonoBehaviour
     {
         [SerializeField] Material _material;
+        [SerializeField] ComputeShader _normalShader;
         [SerializeField] ComputeShader _curvatureShader;
         [SerializeField] ComputeShader _reductionShader;
         [SerializeField] ComputeShader _classifyShader;
@@ -27,6 +28,7 @@ namespace HeightFieldLod
         HeightFieldLayout _layout;
         Camera _camera;
         Mesh[] _lodMeshes;
+        RenderTexture _normalMap;
         RenderTexture _curvature;
         RenderTexture[] _reductionMips;
         ComputeBuffer _lodBuffer;
@@ -39,6 +41,7 @@ namespace HeightFieldLod
         MaterialPropertyBlock _mpb;
         bool _firstFrame = true;
 
+        int _kNormal = -1;
         int _kCurvature = -1;
         int _kReduction = -1;
         int _kClassify = -1;
@@ -76,6 +79,7 @@ namespace HeightFieldLod
             DestroyMeshes();
             _lodMeshes = ChunkMeshBuilder.BuildLodMeshes(_skirtDepthMeters);
 
+            _normalMap = CreateNormalRtf(_layout.TexWidth, _layout.TexHeight, "HeightFieldNormal");
             _curvature = CreateRtf(_layout.TexWidth, _layout.TexHeight, "Curvature");
             ClearRtf(_curvature);
             BuildReductionChain();
@@ -99,6 +103,7 @@ namespace HeightFieldLod
                 UpdateArgsBuffer(lod, 0);
             }
 
+            if (_normalShader != null) _kNormal = _normalShader.FindKernel("CSMain");
             if (_curvatureShader != null) _kCurvature = _curvatureShader.FindKernel("CSMain");
             if (_reductionShader != null) _kReduction = _reductionShader.FindKernel("CSMain");
             if (_classifyShader != null) _kClassify = _classifyShader.FindKernel("CSMain");
@@ -121,6 +126,9 @@ namespace HeightFieldLod
         void ReleaseGpu()
         {
             RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
+            _normalMap?.Release();
+            Destroy(_normalMap);
+            _normalMap = null;
             _curvature?.Release();
             Destroy(_curvature);
             _curvature = null;
@@ -181,6 +189,19 @@ namespace HeightFieldLod
             return rt;
         }
 
+        static RenderTexture CreateNormalRtf(int w, int h, string name)
+        {
+            var rt = new RenderTexture(w, h, 0, RenderTextureFormat.ARGBHalf)
+            {
+                name = name,
+                enableRandomWrite = true,
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp
+            };
+            rt.Create();
+            return rt;
+        }
+
         static void ClearRtf(RenderTexture rt)
         {
             var prev = RenderTexture.active;
@@ -194,6 +215,7 @@ namespace HeightFieldLod
             if (_material == null || height == null || _lodMeshes == null)
                 return;
 
+            RunNormals(height);
             RunCurvature(height);
             RunReduction();
             RunClassify();
@@ -201,8 +223,19 @@ namespace HeightFieldLod
             BuildInstanceLists();
             _prevLodBuffer.SetData(_lodData);
             _material.SetTexture("_HeightTex", height);
+            _material.SetTexture("_NormalTex", _normalMap);
             if (!_material.enableInstancing)
                 _material.enableInstancing = true;
+        }
+
+        void RunNormals(RenderTexture height)
+        {
+            if (_kNormal < 0 || _normalMap == null) return;
+            _normalShader.SetTexture(_kNormal, "_Height", height);
+            _normalShader.SetTexture(_kNormal, "_NormalMap", _normalMap);
+            _normalShader.SetInts("_TexSize", _layout.TexWidth, _layout.TexHeight);
+            _normalShader.SetVector("_PixelWorld", new Vector2(_layout.PixelWorldX, _layout.PixelWorldY));
+            Dispatch2D(_normalShader, _kNormal, _layout.TexWidth, _layout.TexHeight);
         }
 
         void RunCurvature(RenderTexture height)

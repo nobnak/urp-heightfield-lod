@@ -1,0 +1,38 @@
+#pragma kernel CSMain
+
+Texture2D<float> _Height;
+RWTexture2D<float4> _NormalMap;
+uint2 _TexSize;
+float2 _PixelWorld;
+
+int2 MirrorCoord(int2 p, int2 maxP)
+{
+    if (p.x < 0) p.x = -p.x;
+    else if (p.x > maxP.x) p.x = 2 * maxP.x - p.x;
+    if (p.y < 0) p.y = -p.y;
+    else if (p.y > maxP.y) p.y = 2 * maxP.y - p.y;
+    return p;
+}
+
+float SampleH(int2 p, int2 offset, int2 maxP)
+{
+    return _Height[MirrorCoord(p + offset, maxP)];
+}
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _TexSize.x || id.y >= _TexSize.y)
+        return;
+
+    int2 p = int2(id.xy);
+    int2 maxP = int2(_TexSize) - 1;
+    float hL = SampleH(p, int2(-1, 0), maxP);
+    float hR = SampleH(p, int2(1, 0), maxP);
+    float hD = SampleH(p, int2(0, -1), maxP);
+    float hU = SampleH(p, int2(0, 1), maxP);
+    float px = max(_PixelWorld.x, 1e-6);
+    float py = max(_PixelWorld.y, 1e-6);
+    float3 n = normalize(float3((hL - hR) * py, (hD - hU) * px, -2.0 * px * py));
+    _NormalMap[p] = float4(n * 0.5 + 0.5, 1.0);
+}
