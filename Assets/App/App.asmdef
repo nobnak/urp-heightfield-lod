@@ -3,7 +3,8 @@
     "rootNamespace": "App",
     "references": [
         "HeightField",
-        "HeightFieldLod"
+        "HeightFieldLod",
+        "Unity.Mathematics"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
