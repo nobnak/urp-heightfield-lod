@@ -51,9 +51,9 @@ P_{local} = (x,\ y,\ -h(x,y))
 
 where `h` is height in **meters** from `HeightTex` (R channel).
 
-Do **not** use `Mesh.RecalculateNormals()` on procedural meshes; set normals explicitly to **-Z**.
+Do **not** use `Mesh.RecalculateNormals()` on procedural meshes; mesh vertex normals stay **-Z** for shadow bias only.
 
-When in doubt, compare against the Unity **Quad** primitive in Scene View.
+**Lighting and DepthNormals** use a GPU **normal map** derived from height gradients (world-space, see [Normal map](#normal-map-from-height)). When in doubt, compare mesh orientation against the Unity **Quad** primitive in Scene View.
 
 ---
 
@@ -65,16 +65,22 @@ Folders + asmdef inside `Assets/`; UPM packages later when stable.
 Assets/
   HeightField/           # asmdef: HeightField
   HeightFieldLod/        # asmdef: HeightFieldLod (references HeightField)
-  App/                   # asmdef: App + App.Editor
+  App/                   # asmdef: App + App.Editor (references Unity.Mathematics)
     Bridge/
+    HeadSway/            # optional head-sway camera matrices
+    ViewMotion/          # tangent-plane motion for head sway
     Editor/              # scene rig setup menu
+Doc/
+  urp-heightfield-lod-design.md
+  urp-heightfield-lod-design.ja.md
+  head-sway-lens-shift-camera.md
 ```
 
 | Assembly | Responsibility |
 | --- | --- |
 | `HeightField` | `HeightFieldLayout`, height RT allocation, `IHeightFieldSource`, samples (sine) |
-| `HeightFieldLod` | Height → curvature → reduction → LOD classify → draw |
-| `App` | Bridge: layout, rebuild detection, wires height → LOD |
+| `HeightFieldLod` | Height → normal map → curvature → LOD → draw (lit / toon shaders) |
+| `App` | Bridge; optional `HeadSwayLensShiftCamera` + `ViewMotion` |
 
 Editor menu: **GameObject → Height Field → Setup Sample Rig**.
 
@@ -158,9 +164,10 @@ There is **no barrier LOD cap** (no `min(lod, barrierMaxLod)`). Outer chunks mus
 | --- | --- |
 | Renderer Transform | Place at scene origin (or camera center) **once** in Editor; **no runtime follow** |
 | Rebuild triggers | `pixelWidth`, `pixelHeight`, `orthographicSize` |
-| No rebuild | `lensShift`, camera position/rotation, projection matrix-only changes |
+| No rebuild | `lensShift`, camera position/rotation, custom `projectionMatrix` / `worldToCameraMatrix` (e.g. head sway) |
 | LOD metric | Curvature / complexity — **not** camera distance |
-| Scene View | Optional draw (`CameraType.SceneView`, default ON); same buffers as target camera |
+| Draw cameras | All cameras except `CameraType.Preview`, when `cullingMask` includes the rig **layer** (`gameObject.layer`) |
+| Head sway (optional) | `HeadSwayLensShiftCamera` on the ortho camera: rig Transform fixed; `ConvergingLensShift` updates view/projection — see [Head sway camera](#head-sway-camera-optional) |
 
 ---
 
@@ -287,13 +294,14 @@ Neighbor:  _LodIn = _LodBuffer  →  _LodOut = _LodScratch
 
 ```text
 1. Update HeightTex          (HeightField)
-2. Curvature compute         (mirror boundaries)
-3. Reduction max pyramid     (optional / future)
-4. Classify LOD              (exclude border texels from max)
-5. Neighbor constraint       (LodIn → LodOut, swap)
-6. GetData + bucket instances per LOD (CPU; implicit GPU sync)
-7. Copy LOD → _PrevLod for next frame hysteresis
-8. Draw                      (beginCameraRendering)
+2. Normal map from height    (NormalFromHeight.compute, mirror boundaries)
+3. Curvature compute         (mirror boundaries)
+4. Reduction max pyramid     (optional / future)
+5. Classify LOD              (exclude border texels from max)
+6. Neighbor constraint       (LodIn → LodOut, swap)
+7. GetData + bucket instances per LOD (CPU; implicit GPU sync)
+8. Copy LOD → _PrevLod for next frame hysteresis
+9. Draw                      (beginCameraRendering)
 ```
 
 ### Instance lists and draw
@@ -326,16 +334,79 @@ LOD index is implicit from which draw call / buffer is used.
 
 ---
 
+# Normal map from height
+
+Each frame, before curvature, `HeightFieldLodRenderer.RunNormals` dispatches **`NormalFromHeight.compute`** into an `ARGBHalf` RT (`_NormalTex`), same size as `HeightTex`.
+
+### Gradient → world normal
+
+Texture **+Y = world +Y**. Surface world position uses `z = -h`. Outward front-face normal (toward camera on -Z):
+
+```text
+∂h/∂x ≈ (hR - hL) / 2
+∂h/∂y ≈ (hN - hS) / 2   (hS = smaller tex y, hN = larger tex y)
+
+n ∝ (-∂h/∂x · pixelWorldY, -∂h/∂y · pixelWorldX, -pixelWorldX · pixelWorldY)
+```
+
+Encode: `normalRT = n * 0.5 + 0.5`. Height sampling for stencil uses **mirror** coords (same family as curvature).
+
+**Sign rule:** Y component must use **`-∂h/∂y`**. A `+∂h/∂y` bug inverts lighting along world Y (e.g. downward light wrongly shadows +Y-facing slopes) while X can still look correct.
+
+### Shader usage
+
+`HeightFieldLitCommon.hlsl`:
+
+- Vertex: `positionWS.z -= h` from `_HeightTex` (clamp sampler).
+- Fragment / DepthNormals / ShadowCaster bias: `SampleHeightFieldNormalWS(heightUv)` — decode RT ×2−1, normalize. **Do not** use mesh `normalOS` for lighting.
+
+---
+
+# Shading (URP)
+
+| Shader | Path | Forward pass |
+| --- | --- | --- |
+| `HeightFieldLit` | `HeightFieldLod/HeightFieldLit.shader` | URP `LightingPhysicallyBased`, optional specular |
+| `HeightFieldToon` | `HeightFieldLod/HeightFieldToon.shader` | `diffuse = saturate(N·L) * attenuation * shadow`; `lerp(ShadowColor, LightColor, diffuse)` |
+
+Shared: `HeightFieldLitCommon.hlsl`, procedural instancing, `_HeightTex` + `_NormalTex`.
+
+| Pass | LightMode | Purpose |
+| --- | --- | --- |
+| ForwardLit | `UniversalForward` | Color |
+| DepthNormals | `DepthNormals` | World normals from `_NormalTex` |
+| ShadowCaster | `ShadowCaster` | Displaced positions; normal bias from height normal |
+
+Main light: URP `GetMainLight` (+ shadow coord when enabled). Directional **distance attenuation** is forced to `1` when `< 0.5` (avoid bogus dimming). Indirect / additional lights are not implemented.
+
+---
+
 # Rendering (URP)
 
 | Item | Detail |
 | --- | --- |
 | Hook | `RenderPipelineManager.beginCameraRendering` |
 | Draw | `Graphics.DrawMeshInstancedIndirect` per LOD mesh |
-| Cameras | Target camera + optional Scene View |
+| Cameras | Any non-Preview camera whose mask includes the heightfield rig layer; shadow passes use the same rule |
 | Depth | Write ON |
-| Lighting | Main directional light only (simplified forward) |
+| Materials | `HeightFieldLit` or `HeightFieldToon` on `HeightFieldLodRenderer` |
 | Avoid | Geometry shader, CPU mesh rebuild, runtime topology, hardware tessellation |
+
+---
+
+# Head sway camera (optional)
+
+Component: **`App.HeadSway.HeadSwayLensShiftCamera`** on the orthographic camera (same rig as heightfield). Does **not** move the rig Transform; simulates small head motion for parallax at a chosen convergence depth.
+
+| Piece | Role |
+| --- | --- |
+| `ViewMotion` | Builds tangent-plane offset `d` (m): circular, noise, bob, inertial sway, rotate |
+| `ConvergingLensShift` | Applies `V` (view translation) + `P` (asymmetric frustum or ortho shear) from `d` and `z_f` |
+| `_focusDistance` | Convergence depth `z_f` (m); same `d` scales both passes |
+
+Detail: [head-sway-lens-shift-camera.md](head-sway-lens-shift-camera.md).
+
+Does not trigger `HeightFieldBridge` rebuild (projection / view matrix only).
 
 ---
 
@@ -358,7 +429,7 @@ LOD index is implicit from which draw call / buffer is used.
 | Curvature scale | 1.0 (tune with thresholds) |
 | Compute thread group | 8×8 |
 | First-frame LOD | 3 |
-| Draw in Scene View | ON |
+| Rig layer | Set on Bridge / LOD renderer; only cameras that render this layer draw the heightfield |
 
 ---
 
@@ -374,6 +445,8 @@ LOD index is implicit from which draw call / buffer is used.
 | Compile: `unity_InstanceID` | Procedural variant not defined | `#ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED` in `SetupProcedural` |
 | Compile: global struct `_Instance` | D3D11 shader limit | Per-float4 globals + buffer fetch |
 | `MaterialPropertyBlock` ctor error | Field initializer on MonoBehaviour | Create in `Awake` |
+| +Y slopes wrong shadow under Y-axis light; X OK | Normal map Y used `+∂h/∂y` instead of `-∂h/∂y` for `z = -h` | `NormalFromHeight`: `n.y = -dhdy * px` |
+| `Camera` compile error in `App` | Namespace `App.Camera` hid `UnityEngine.Camera` | Rename to `App.HeadSway` |
 
 ### Not used (platform / API constraints)
 

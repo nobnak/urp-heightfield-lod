@@ -51,9 +51,9 @@ P_{local} = (x,\ y,\ -h(x,y))
 
 `h` は `HeightTex` の R チャンネル（**メートル**）。
 
-手続きメッシュで `Mesh.RecalculateNormals()` は使わない。法線は明示的に **-Z**。
+手続きメッシュで `Mesh.RecalculateNormals()` は使わない。頂点法線はシャドウバイアス用に **-Z** のまま。
 
-迷ったら Scene View で Unity **Quad** プリミティブと向きを比較する。
+**ライティングと DepthNormals** は、高さ勾配から求めた GPU **法線マップ**（ワールド空間、[法線マップ](#法線マップ高さから生成)）を使う。迷ったら Scene View で Unity **Quad** と向きを比較する。
 
 ---
 
@@ -65,16 +65,21 @@ P_{local} = (x,\ y,\ -h(x,y))
 Assets/
   HeightField/           # asmdef: HeightField
   HeightFieldLod/        # asmdef: HeightFieldLod（HeightField を参照）
-  App/                   # asmdef: App + App.Editor
+  App/                   # asmdef: App + App.Editor（Unity.Mathematics 参照）
     Bridge/
+    HeadSway/            # 任意: 頭部動揺用カメラ行列
+    ViewMotion/          # 接線平面の時間変化（頭振り）
     Editor/              # シーン Rig セットアップメニュー
+Doc/
+  urp-heightfield-lod-design.md / .ja.md
+  head-sway-lens-shift-camera.md
 ```
 
 | アセンブリ | 責務 |
 | --- | --- |
 | `HeightField` | `HeightFieldLayout`、Height RT 確保、`IHeightFieldSource`、サンプル（正弦波） |
-| `HeightFieldLod` | Height → 曲率 → リダクション → LOD 分類 → 描画 |
-| `App` | Bridge: Layout 生成、リビルド検知、Height → LOD 接続 |
+| `HeightFieldLod` | Height → 法線 RT → 曲率 → LOD → 描画（Lit / Toon） |
+| `App` | Bridge、任意で `HeadSwayLensShiftCamera` + `ViewMotion` |
 
 エディタメニュー: **GameObject → Height Field → Setup Sample Rig**。
 
@@ -158,9 +163,10 @@ uvScale  = (32 / texW, 32 / texH)
 | --- | --- |
 | Renderer Transform | エディタでシーン原点（またはカメラ中心）に **一度だけ** 配置。**実行時追従なし** |
 | リビルド条件 | `pixelWidth`、`pixelHeight`、`orthographicSize` |
-| リビルドしない | `lensShift`、カメラ位置・回転、投影行列のみの変化 |
+| リビルドしない | `lensShift`、位置・回転、カスタム `projectionMatrix` / `worldToCameraMatrix`（頭振りなど） |
 | LOD 指標 | 曲率 / 複雑度 — **カメラ距離ではない** |
-| Scene View | 任意描画（`CameraType.SceneView`、既定 ON）。ターゲットカメラと同じバッファ |
+| 描画カメラ | `CameraType.Preview` 以外で、Rig の **レイヤー**（`gameObject.layer`）が `cullingMask` に含まれるカメラすべて |
+| 頭振り（任意） | 正射影カメラに `HeadSwayLensShiftCamera`。リグ Transform 固定で `ConvergingLensShift` が行列更新 — [頭部動揺カメラ](#頭部動揺カメラ任意) |
 
 ---
 
@@ -287,13 +293,14 @@ neighbor パスで `clamp(lo, hi)` する前に、近傍 min/max で `lo > hi` �
 
 ```text
 1. HeightTex 更新           (HeightField)
-2. 曲率 Compute             (ミラー境界)
-3. max リダクションピラミッド  (任意 / 将来)
-4. LOD 分類                   (境界テクセルを max から除外)
-5. 隣接制約                   (LodIn → LodOut、スワップ)
-6. GetData + LOD 別インスタンス振り分け (CPU、暗黙 GPU 同期)
-7. LOD を _PrevLod にコピー   (次フレームのヒステリシス)
-8. 描画                       (beginCameraRendering)
+2. 法線マップ生成             (NormalFromHeight.compute、ミラー境界)
+3. 曲率 Compute             (ミラー境界)
+4. max リダクションピラミッド  (任意 / 将来)
+5. LOD 分類                   (境界テクセルを max から除外)
+6. 隣接制約                   (LodIn → LodOut、スワップ)
+7. GetData + LOD 別インスタンス振り分け (CPU、暗黙 GPU 同期)
+8. LOD を _PrevLod にコピー   (次フレームのヒステリシス)
+9. 描画                       (beginCameraRendering)
 ```
 
 ### インスタンスリストと描画
@@ -326,16 +333,79 @@ LOD 番号はどの draw / バッファかで暗黙的に決まる。
 
 ---
 
+# 法線マップ（高さから生成）
+
+毎フレーム、曲率の前に `HeightFieldLodRenderer.RunNormals` が **`NormalFromHeight.compute`** を `HeightTex` と同サイズの `ARGBHalf` RT（`_NormalTex`）へ dispatch する。
+
+### 勾配 → ワールド法線
+
+テクスチャ **+Y = ワールド +Y**。ワールド位置は `z = -h`。カメラ側（-Z）の表層外向き法線:
+
+```text
+∂h/∂x ≈ (hR - hL) / 2
+∂h/∂y ≈ (hN - hS) / 2   （hS = 小さい tex y、hN = 大きい tex y）
+
+n ∝ (-∂h/∂x · pixelWorldY, -∂h/∂y · pixelWorldX, -pixelWorldX · pixelWorldY)
+```
+
+エンコード: `normalRT = n * 0.5 + 0.5`。ステンシル用 Height は **ミラー**（曲率と同系）。
+
+**符号:** Y 成分は **`-∂h/∂y`** 必須。`+∂h/∂y` だとワールド Y 向きライトだけ破綻（例: 下向き光で +Y 斜面が誤って Shadow）。X だけ正しく見えることがある。
+
+### シェーダでの利用
+
+`HeightFieldLitCommon.hlsl`:
+
+- VS: `_HeightTex`（clamp）で `positionWS.z -= h`
+- FS / DepthNormals / ShadowCaster バイアス: `SampleHeightFieldNormalWS(heightUv)` — RT を ×2−1 して normalize。**ライト計算にメッシュ法線 -Z は使わない**
+
+---
+
+# シェーディング（URP）
+
+| シェーダ | パス |
+| --- | --- |
+| `HeightFieldLit` | URP `LightingPhysicallyBased`（簡易 PBR） |
+| `HeightFieldToon` | `diffuse = saturate(N·L) * 減衰 * シャドウ`、`lerp(ShadowColor, LightColor, diffuse)` |
+
+共通: `HeightFieldLitCommon.hlsl`、手続きインスタンス、`_HeightTex` + `_NormalTex`。
+
+| Pass | LightMode | 用途 |
+| --- | --- | --- |
+| ForwardLit | `UniversalForward` | カラー |
+| DepthNormals | `DepthNormals` | `_NormalTex` 由来のワールド法線 |
+| ShadowCaster | `ShadowCaster` | 変位後位置、高さ法線でバイアス |
+
+メインライト: `GetMainLight`（シャドウあり時は shadow coord）。平行光で `distanceAttenuation < 0.5` のとき **1 にクランプ**。間接光・追加ライトは未実装。
+
+---
+
 # 描画（URP）
 
 | 項目 | 内容 |
 | --- | --- |
 | フック | `RenderPipelineManager.beginCameraRendering` |
 | 描画 | LOD メッシュごとに `Graphics.DrawMeshInstancedIndirect` |
-| カメラ | ターゲットカメラ + 任意で Scene View |
+| カメラ | Preview 以外で Rig レイヤーをマスクに含むカメラ。シャドウパスも同条件 |
 | 深度 | 書き込み ON |
-| ライティング | メイン平行光のみ（簡易 Forward） |
+| マテリアル | `HeightFieldLodRenderer` に Lit または Toon |
 | 避ける | ジオメトリシェーダ、CPU メッシュ再構築、ランタイムトポロジ、HW テッセレーション |
+
+---
+
+# 頭部動揺カメラ（任意）
+
+正射影カメラに **`App.HeadSway.HeadSwayLensShiftCamera`** を付ける。リグ Transform は動かさず、収束深度 `z_f` 付近を画面上で保ちつつ `d` でパララックスだけ変える。
+
+| 要素 | 役割 |
+| --- | --- |
+| `ViewMotion` | 接線平面変位 `d`（m）を合成（円・ノイズ・呼吸・慣性揺れ・回転） |
+| `ConvergingLensShift` | `d` と `z_f` から `V`（視点）と `P`（非対称視錐 / 正射影シア）を更新 |
+| `_focusDistance` | 収束深度 `z_f`（m） |
+
+詳細: [head-sway-lens-shift-camera.md](head-sway-lens-shift-camera.md)。
+
+`HeightFieldBridge` のリビルド条件には **含めない**（行列のみの変更）。
 
 ---
 
@@ -358,7 +428,7 @@ LOD 番号はどの draw / バッファかで暗黙的に決まる。
 | 曲率スケール | 1.0（閾値と併せて調整） |
 | Compute スレッドグループ | 8×8 |
 | 初回フレーム LOD | 3 |
-| Scene View 描画 | ON |
+| Rig レイヤー | Bridge / LOD オブジェクトに設定。このレイヤーを描画するカメラだけが Heightfield を描く |
 
 ---
 
@@ -374,6 +444,8 @@ LOD 番号はどの draw / バッファかで暗黙的に決まる。
 | コンパイル: `unity_InstanceID` | 手続きインスタンス variant 未定義 | `SetupProcedural` 内で `#ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED` |
 | コンパイル: グローバル struct `_Instance` | D3D11 シェーダ制限 | float4 個別 + バッファ参照 |
 | `MaterialPropertyBlock` 生成エラー | MonoBehaviour のフィールド初期化 | `Awake` で生成 |
+| Y 向きライトで +Y 斜面だけ Shadow が誤る、X は正常 | 法線 Y が `+∂h/∂y`（`z=-h` では `-∂h/∂y` が正） | `NormalFromHeight`: `n.y = -dhdy * px` |
+| `Camera` のコンパイルエラー | 名前空間 `App.Camera` が `UnityEngine.Camera` を隠す | `App.HeadSway` に改名 |
 
 ### 使用しないもの（プラットフォーム / API 制約）
 

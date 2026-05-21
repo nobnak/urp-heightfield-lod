@@ -23,7 +23,6 @@ namespace HeightFieldLod
         [SerializeField] float _lodDownHigh = 0.6f;
         [SerializeField] float _lodDownMid = 0.45f;
         [SerializeField] float _lodDownLow = 0.12f;
-        [SerializeField] bool _drawInSceneView = true;
         [SerializeField] bool _castShadows = true;
 
         HeightFieldLayout _layout;
@@ -378,16 +377,12 @@ namespace HeightFieldLod
 
         bool ShouldRender(Camera camera)
         {
-            if (_material == null || _lodMeshes == null || _camera == null)
+            if (_material == null || _lodMeshes == null || _layout.TexWidth <= 0)
                 return false;
-            if (camera == _camera)
-                return true;
-            if (_drawInSceneView && camera.cameraType == CameraType.SceneView)
-                return true;
-            // DrawMeshInstancedIndirect must run for shadow-map cameras too.
-            if (_castShadows && camera.targetTexture != null)
-                return true;
-            return false;
+            if (camera.cameraType == CameraType.Preview)
+                return false;
+            int layer = gameObject.layer;
+            return (camera.cullingMask & (1 << layer)) != 0;
         }
 
         static void Dispatch2D(ComputeShader cs, int kernel, int w, int h)
