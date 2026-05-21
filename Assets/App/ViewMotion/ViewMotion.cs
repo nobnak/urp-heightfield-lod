@@ -12,7 +12,8 @@ namespace App.ViewMotion
         Bob = 1 << 1,
         Rotate = 1 << 2,
         Noise = 1 << 3,
-        InertialSway = 1 << 4
+        InertialSway = 1 << 4,
+        FixedOffset = 1 << 5
     }
 
     /// <summary>接線平面の変位 d（m）を時間で合成する。</summary>
@@ -46,6 +47,10 @@ namespace App.ViewMotion
             [Min(0f)] public float bobHeartAmp;
             [Min(1f)] public float bobHeartExp = 4f;
 
+            [Header("Fixed offset (m)")]
+            [Range(0f, 360f)] public float fixedOffsetDirectionDeg;
+            [Min(0f)] public float fixedOffsetLength;
+
             [Header("Rotate (deg, snoise)")]
             [Range(0f, 89f)] public float rotateSnoiseDeg;
             [Min(0f)] public float rotateSnoiseRate = 0.35f;
@@ -76,6 +81,8 @@ namespace App.ViewMotion
                 view += SampleBob(p, time);
             if ((vm & ViewMotionMode.InertialSway) != 0)
                 view += IntegrateInertial(p, time, deltaTime, ref s);
+            if ((vm & ViewMotionMode.FixedOffset) != 0)
+                view += SampleFixedOffset(p);
             if ((vm & ViewMotionMode.Rotate) != 0)
                 view = RotateCombined(p, time, view);
             return view;
@@ -135,6 +142,15 @@ namespace App.ViewMotion
                 mag += Mathf.Pow(sHeart, p.bobHeartExp) * p.bobHeartAmp;
             }
             return new Vector2(0f, mag);
+        }
+
+        static Vector2 SampleFixedOffset(in Params p)
+        {
+            var s = p.fixedOffsetLength;
+            if (s <= 0f)
+                return Vector2.zero;
+            var rad = p.fixedOffsetDirectionDeg * Mathf.Deg2Rad;
+            return new Vector2(Mathf.Cos(rad), Mathf.Sin(rad)) * s;
         }
 
         static Vector2 RotateCombined(in Params p, float time, Vector2 view)
