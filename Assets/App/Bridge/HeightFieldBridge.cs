@@ -9,7 +9,7 @@ namespace App.Bridge
     {
         [SerializeField] Camera _camera;
         [SerializeField] int _barrierChunks = 2;
-        [SerializeField] SineHeightFieldSource _heightSource;
+        [SerializeField] MonoBehaviour _heightSource;
         [SerializeField] HeightFieldLodRenderer _lodRenderer;
 
         HeightFieldLayout _layout;
@@ -17,31 +17,40 @@ namespace App.Bridge
         int _lastH = -1;
         float _lastOrtho = -1f;
 
+        IHeightFieldSource HeightSource => _heightSource as IHeightFieldSource;
+
         void Reset()
         {
             _camera = Camera.main;
-            _heightSource = GetComponent<SineHeightFieldSource>();
+            _heightSource = FindHeightSourceOn(gameObject);
             _lodRenderer = GetComponent<HeightFieldLodRenderer>();
+        }
+
+        void OnValidate()
+        {
+            if (_heightSource != null && _heightSource is not IHeightFieldSource)
+                Debug.LogWarning($"{name}: _heightSource must implement {nameof(IHeightFieldSource)}.", this);
         }
 
         void OnEnable() => TryRebuild(force: true);
 
         void OnDisable()
         {
-            _heightSource?.Release();
+            HeightSource?.Release();
             _lodRenderer?.Release();
         }
 
         void Update()
         {
-            if (_camera == null || _heightSource == null || _lodRenderer == null)
+            var source = HeightSource;
+            if (_camera == null || source == null || _lodRenderer == null)
                 return;
 
             if (NeedsRebuild())
                 TryRebuild(force: true);
 
-            _heightSource.UpdateHeight(_layout, Time.time);
-            _lodRenderer.Tick(_heightSource.HeightTexture, Time.deltaTime);
+            source.UpdateHeight(_layout, Time.time);
+            _lodRenderer.Tick(source.HeightTexture, Time.deltaTime);
         }
 
         bool NeedsRebuild()
@@ -53,7 +62,8 @@ namespace App.Bridge
 
         void TryRebuild(bool force)
         {
-            if (_camera == null) return;
+            var source = HeightSource;
+            if (_camera == null || source == null) return;
             if (!force && !NeedsRebuild()) return;
 
             _layout = HeightFieldLayout.FromCamera(_camera, _barrierChunks);
@@ -61,8 +71,18 @@ namespace App.Bridge
             _lastH = _camera.pixelHeight;
             _lastOrtho = _camera.orthographicSize;
 
-            _heightSource.Allocate(_layout);
+            source.Allocate(_layout);
             _lodRenderer.Configure(_layout, _camera);
+        }
+
+        static MonoBehaviour FindHeightSourceOn(GameObject go)
+        {
+            var components = go.GetComponents<MonoBehaviour>();
+            for (int i = 0; i < components.Length; i++) {
+                if (components[i] is IHeightFieldSource)
+                    return components[i];
+            }
+            return null;
         }
     }
 }
