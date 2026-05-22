@@ -220,6 +220,13 @@
       },
       "url": "https://packages.unity.com"
     },
+    "jp.nobnak.snoise": {
+      "version": "2.3.5",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://package.openupm.com"
+    },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",
       "depth": 0,
