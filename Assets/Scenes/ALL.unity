@@ -287,7 +287,7 @@ MonoBehaviour:
     bobHeartAmp: 0.01
     bobHeartExp: 4
     fixedOffsetDirectionDeg: 60
-    fixedOffsetLength: 4
+    fixedOffsetLength: 0
     rotateSnoiseDeg: 10
     rotateSnoiseRate: 0.1
     rotateSnoiseSeed: 0
