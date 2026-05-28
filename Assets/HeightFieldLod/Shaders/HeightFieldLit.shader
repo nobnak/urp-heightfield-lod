@@ -78,7 +78,7 @@ Shader "HeightFieldLod/HeightFieldLit"
                 BRDFData brdfData;
                 InitializeBRDFData(surfaceData, brdfData);
 
-                float3 normalWS = NormalizeNormalPerPixel(SampleHeightFieldNormalWS(i.heightUv));
+                float3 normalWS = NormalizeNormalPerPixel(TransformObjectToWorldNormal(SampleHeightFieldNormalOS(i.heightUv)));
                 float3 viewDirWS = GetWorldSpaceNormalizeViewDir(i.positionWS);
                 Light mainLight = GetHeightFieldMainLight(i.positionWS);
 

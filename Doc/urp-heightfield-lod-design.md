@@ -14,6 +14,8 @@ URP-based adaptive heightfield rendering for orthographic cameras:
 
 Primary goals: fullscreen heightfield visualization, media art, dynamic simulation display.
 
+Layered stacks, 3-stage pipeline, coordinates: [heightfield-lod-layered-design.md](heightfield-lod-layered-design.md)
+
 Target platform: **Windows** (DX11/12, Shader Model 5.0).
 
 ---

@@ -60,7 +60,7 @@ Shader "HeightFieldLod/HeightFieldToon"
                 UNITY_SETUP_INSTANCE_ID(i);
 
                 half3 albedo = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, i.baseUv).rgb;
-                float3 normalWS = NormalizeNormalPerPixel(SampleHeightFieldNormalWS(i.heightUv));
+                float3 normalWS = NormalizeNormalPerPixel(TransformObjectToWorldNormal(SampleHeightFieldNormalOS(i.heightUv)));
                 Light mainLight = GetHeightFieldMainLight(i.positionWS);
                 half diffuse = saturate(dot(normalWS, mainLight.direction))
                     * mainLight.distanceAttenuation * mainLight.shadowAttenuation;

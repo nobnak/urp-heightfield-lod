@@ -37,7 +37,8 @@ DNVaryings DepthNormalsVertex(DNAttributes input)
 void DepthNormalsFragment(DNVaryings input, out half4 outNormalWS : SV_Target0)
 {
     UNITY_SETUP_INSTANCE_ID(input);
-    half3 normalWS = SampleHeightFieldNormalWS(input.heightUv);
+    half3 normalOS = SampleHeightFieldNormalOS(input.heightUv);
+    half3 normalWS = TransformObjectToWorldNormal(normalOS);
     outNormalWS = half4(NormalizeNormalPerPixel(normalWS), 0.0);
 }
 

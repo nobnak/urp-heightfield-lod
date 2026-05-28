@@ -9,19 +9,19 @@ TEXTURE2D(_NormalTex);
 SAMPLER(sampler_NormalTex);
 
 StructuredBuffer<float4> _ChunkInstances;
-float4 _WorldScaleCenter;
+float4 _LocalScaleCenter;
 float4 _UvScaleOffset;
 
 void SetupProcedural()
 {
 #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
     uint i = unity_InstanceID * 2;
-    _WorldScaleCenter = _ChunkInstances[i];
+    _LocalScaleCenter = _ChunkInstances[i];
     _UvScaleOffset = _ChunkInstances[i + 1];
 #endif
 }
 
-half3 SampleHeightFieldNormalWS(float2 heightUv)
+half3 SampleHeightFieldNormalOS(float2 heightUv)
 {
     half3 n = SAMPLE_TEXTURE2D_LOD(_NormalTex, sampler_NormalTex, heightUv, 0).xyz * 2.0 - 1.0;
     return normalize(n);
@@ -53,18 +53,19 @@ HFVaryings HFVert(HFAttributes v)
 #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
     SetupProcedural();
 #else
-    _WorldScaleCenter = float4(1, 1, 0, 0);
+    _LocalScaleCenter = float4(1, 1, 0, 0);
     _UvScaleOffset = float4(1, 1, 0, 0);
 #endif
 
     float2 heightUv = v.uv * _UvScaleOffset.xy + _UvScaleOffset.zw;
     float h = SAMPLE_TEXTURE2D_LOD(_HeightTex, sampler_HeightTex, heightUv, 0).r;
-    float2 worldXY = (v.positionOS.xy - 0.5) * _WorldScaleCenter.xy + _WorldScaleCenter.zw;
-    float3 positionWS = float3(worldXY.x, worldXY.y, v.positionOS.z - h);
+    float2 localXY = (v.positionOS.xy - 0.5) * _LocalScaleCenter.xy + _LocalScaleCenter.zw;
+    float3 positionOS = float3(localXY.x, localXY.y, v.positionOS.z - h);
+    float3 positionWS = TransformObjectToWorld(positionOS);
 
     o.positionWS = positionWS;
     o.heightUv = heightUv;
-    o.normalWS = SampleHeightFieldNormalWS(heightUv);
+    o.normalWS = TransformObjectToWorldNormal(SampleHeightFieldNormalOS(heightUv));
     o.baseUv = 0;
     o.positionCS = TransformWorldToHClip(positionWS);
     return o;
