@@ -1,224 +1,175 @@
 # Heightfield LOD — Layered Design
 
 > Japanese: [heightfield-lod-layered-design.ja.md](heightfield-lod-layered-design.ja.md)  
-> Base: [urp-heightfield-lod-design.md](urp-heightfield-lod-design.md)
+> Algorithm spec: [urp-heightfield-lod-design.md](urp-heightfield-lod-design.md)
 
-## Discussion Summary
+---
 
-| Topic | Conclusion |
+## Document map
+
+| Doc | Scope |
 | --- | --- |
-| Nanite-like? | No — **orthographic adaptive heightfield**, not virtualized arbitrary meshes |
-| Multiple layers | Today: **1 rig = 1 height + 1 LOD + 1 draw**; Transform barely used |
-| Mode enum | **Not needed** — App supplies RT(s); layers **reference** height / LOD cache |
-| Pipeline | **3 stages**: (1) Height (2) Curvature/LOD (3) Chunk mesh draw |
-| `h` coordinates | Spec: **object-space -Z**; code: **world XY from layout + world -h** — matches only when rig/camera are identity |
-| Depth / stacking | Layer **Transform** + shared `h` when same RT; interpret depth along **view** for display |
-| LOD thresholds | **Same per HeightTex** (not varied per layer); no “params-based” branching design |
-| LOD sharing | Share via **`ILodSource` references** (cache is optional / not required) |
-| `GetData` | **Single call site** in `BuildInstanceLists`; shared height → one read per frame |
+| **This doc** | Context map, module boundaries, N/K/M runtime, pull updates |
+| [urp-heightfield-lod-design.md](urp-heightfield-lod-design.md) | Curvature LOD, chunk mesh, Quad coords, shaders |
+| [head-sway-lens-shift-camera.md](head-sway-lens-shift-camera.md) | Lens-shift camera only |
 
 ---
 
-## Goals
+## System overview
 
-- Multiple **layers** in the scene; each layer’s **Transform** defines spatial and depth relationships.
-- App writes **one or many** height RTs; layers either **compute** curvature/LOD or **reference** another layer’s cache.
-- Keep chunk LOD, curvature classification, indirect draw; **fix world-space shortcut** in the vertex shader.
-
-## Non-Goals (initial scope)
-
-- Nanite-style clusters / streaming
-- Per-layer different `HeightFieldLayout` (resolution / camera)
-- Full GPU bucketing without `GetData` (noted as future work)
-
----
-
-## Architecture (adopted model)
-
-**N height RTs, K LOD computes, M drawers (M ≥ 1, K ≥ 1).**  
-References follow “consumers own references”: drawers share `ILodSource`. **No compute→compute references**. LOD thresholds are fixed per height.
+Orthographic **adaptive heightfield** (not Nanite-style mesh virtualization).
 
 ```text
-App
-  └─ HeightTex × N          (N ≥ 1)
-
-HeightFieldLodCompute × K
-  Input:
-    · RenderTexture _height (required)
-  Output: Normal, Curvature, LOD + instance/args buffers
-
-HeightFieldChunkMeshDrawer × M
-  Input: ILodSource _lod (required)
-  Draw: sample _lod.HeightTex in VS, indirect draw from _lod buffers
-  Transform on Drawer (or parent) for layer placement
+App (Bridge)           → wires rig: Allocate / Configure
+HeightField              → HeightFieldLayout, IHeightFieldSource
+HeightFieldLod           → LayoutHost, LodCompute, ChunkMeshDrawer, ILodSource
+Unity / URP              → Camera, RenderPipeline
 ```
 
-| Symbol | Meaning |
-| --- | --- |
-| **N** | Height RTs the app writes |
-| **K** | LOD compute components in the scene |
-| **M** | Drawers (layers) in the scene |
-
-Reference patterns:
-- One compute per height, many drawers reference it (recommended).
-- Multiple computes referencing the same height is allowed but duplicates work (not recommended).
-
-### Reference direction
-
-- **Forward references (types):** drawers reference `ILodSource`.
-- **Update control:** prefer **pull**: drawer calls `EnsureUpdated` before drawing. Host-based push is optional for large scenes.
-
-Thin **`HeightFieldLayoutHost`**: shared layout + optional frame ordering (no cache required).
-
-Drawer↔Compute: **M:M by default** on one GameObject; multiple drawers may reference one compute if needed.
+**Pipeline:** (1) Height `N` RTs → (2) LOD `K` computes → (3) Draw `M` drawers.  
+**K:M** many-to-many; multiple drawers may share one `ILodSource`.
 
 ---
 
-## Coordinates and `h`
+## Context map
 
-### Principles (Unity Quad)
+### Bounded contexts
 
-| Item | Rule |
-| --- | --- |
-| Plane | Layer **local XY** |
-| Normal | **-Z** (local) |
-| Height | `P_os = (x_os, y_os, z_skirt - h(uv))` meters |
-| To world | `P_ws = TransformObjectToWorld(P_os)` |
-| To clip | `P_cs = TransformWorldToHClip(P_ws)` |
+| Context | asmdef | Responsibility | Public contracts |
+| --- | --- | --- | --- |
+| **HeightField** | `HeightField` | Layout, height generation | `HeightFieldLayout`, `IHeightFieldSource` |
+| **HeightFieldLod** | `HeightFieldLod` | Curvature/LOD, indirect draw | `ILodSource`, Compute, Drawer |
+| **App.Bridge** | `App` | Scene rig wiring | `HeightFieldBridge` |
+| **App (opt.)** | `App` | Head sway / view motion | orthogonal to HF |
+| **Unity / URP** | — | Camera, pipeline | external |
 
-**Avoid:** writing **world XY** from layout and **world -h** without `ObjectToWorld`.
+### Context diagram
 
-### Why current code “works”
+```mermaid
+flowchart TB
+  subgraph external["External (Unity / URP)"]
+    CAM[Camera]
+    URP[URP RenderPipeline]
+  end
 
-Identity rig rotation and identity camera rotation make local -Z equal world -Z and layout world XY equal local XY. Rotating the rig does **not** rotate displacement today.
+  subgraph app_bridge["App.Bridge"]
+    BR[HeightFieldBridge]
+  end
 
-### Layout vs Transform
+  subgraph hf["HeightField"]
+    LAY[HeightFieldLayout]
+    IHS[IHeightFieldSource]
+    UTIL[HeightFieldSourceUtil]
+  end
 
-| Data | Space | Role |
-| --- | --- | --- |
-| `HeightFieldLayout` | Shared | Texel size, chunk grid, `PixelWorld*` — **same for all layers** initially |
-| `ChunkInstanceData` | **Layer-local** | Chunk center/scale in parent local space |
-| `Transform` | Per layer | Offset, orientation, scale between layers |
-| `h` | Texture scalar | Shape; same RT → same shape |
+  subgraph hflod["HeightFieldLod"]
+    HOST[HeightFieldLayoutHost]
+    COMP[HeightFieldLodCompute]
+    DRAW[HeightFieldChunkMeshDrawer]
+    ILOD[ILodSource]
+    SH[Shaders / Compute]
+  end
 
-### Camera / view depth
+  CAM --> HOST
+  CAM --> BR
+  BR --> LAY
+  BR --> IHS
+  BR --> COMP
+  BR --> DRAW
+  HOST --> LAY
+  IHS --> LAY
+  UTIL -.-> IHS
+  IHS -->|HeightTex| COMP
+  COMP --> ILOD
+  DRAW --> ILOD
+  DRAW --> IHS
+  DRAW --> HOST
+  DRAW --> URP
+  COMP --> SH
+  DRAW --> SH
+```
 
-- **h** along **object -Z** is primary; orient rig toward camera so -Z aligns with view.
-- **Layer ordering** uses Transform position (depth) and/or render queue; same RT + same transform → coincident surfaces.
-- **Head sway** keeps geometry fixed, camera matrices change — same as current design. Optional future: add **h in view space** if requirements change.
-
-### Normals / curvature
-
-- Compute passes use layout-aligned texel gradients (unchanged).
-- When layer rotates, transform normals with **object-to-world** 3×3 in draw or VS.
-
----
-
-## Components
-
-### `HeightFieldStack`
-
-- Builds / rebuilds `HeightFieldLayout` from camera pixel size and ortho size.
-- Owns `HeightFieldLodCache` registry.
-- Frame order: height updates → unique cache updates → layer draws.
-
-Replaces `HeightFieldBridge` over time.
-
-### `HeightFieldLayer`
-
-Per GameObject:
-
-- `HeightFieldLodCompute` (stage 2)
-- `HeightFieldLodDraw` (stage 3)
-
-References:
-
-- `_height` — RT from App
-- `_lodCompute` — if set, **skip** stage 2 and use referenced cache
-- `_drawCamera` — default stack camera
-
-### `HeightFieldLodCache`
-
-Cache key:
+### Compile-time dependencies
 
 ```text
-HeightTex.GetInstanceID()
-+ layout (TexW/H, PixelWorld, barrier)
-+ LOD params (curvature scale, thresholds)
+App            → HeightField, HeightFieldLod
+HeightFieldLod → HeightField
+HeightField    → Unity only
 ```
 
-Holds normal/curvature/LOD buffers and optionally shared instance/args buffers.  
-Inspector reference to another `HeightFieldLodCompute` is clearer than RT instance ID alone.
+### Integration patterns
 
-### App stage 1
+| Pattern | How |
+| --- | --- |
+| Shared layout | `HeightFieldLayoutHost` (recommended) |
+| Shared height | Same `IHeightFieldSource` / `HeightTex` |
+| Shared LOD | Multiple drawers → same `ILodSource` |
+| Layer pose | Per-drawer `Transform` |
 
-Keep `IHeightFieldSource`. Multiple sources → multiple RTs. One simulation, many layers → **one RT, many layer references**.
-
----
-
-## Frame Pipeline
-
-1. Rebuild layout if needed  
-2. App writes each distinct `HeightTex`  
-3. For each unique cache key: normals → curvature → classify → neighbor → **`GetData` once** → build instance lists  
-4. Per layer: indirect draw with layer **Transform** and material  
-
-Draw order: stack layer list (back to front) and/or material render queue.
+No mode enum — Inspector references only. No compute→compute references.
 
 ---
 
-## `GetData`
+## Scene layout
 
-Only in `BuildInstanceLists`. Shared cache → **one CPU read per cache per frame**, multiple draws.
-
----
-
-## Shader (`HFVert`)
-
-```hlsl
-float3 posOS = float3(localXY.x, localXY.y, v.positionOS.z - h);
-float3 posWS = TransformObjectToWorld(posOS);
-o.positionCS = TransformWorldToHClip(posWS);
+```text
+HeightFieldRig
+  HeightFieldLayoutHost
+  HeightFieldBridge
+  IHeightFieldSource (e.g. Sine)
+  HeightFieldLodCompute    (ILodSource)
+  HeightFieldChunkMeshDrawer  → references _lod, optional _heightSource
 ```
 
-Rename `WorldScaleCenter` → `LocalScaleCenter` in `ChunkInstanceData`.
+Multi-layer: one `LodCompute` per height, many drawers referencing it (recommended).
 
 ---
 
-## Migration
+## Frame flow (pull)
 
-| Current | Target |
+```text
+Bridge.Update     → rebuild Allocate/Configure on layout change
+
+Drawer (per camera):
+  heightSource.EnsureUpdated(layout, time)   // Time.frameCount guard
+  lod.EnsureUpdated(layout, height)
+  DrawMeshInstancedIndirect
+```
+
+---
+
+## Component roles
+
+| Component | Role |
 | --- | --- |
-| `HeightFieldBridge` | `HeightFieldStack` + `HeightFieldLayer`(s) |
-| Legacy monolith | `HeightFieldLodCompute` + `HeightFieldChunkMeshDrawer` |
-| Single rig menu | Stack + layer setup |
+| `HeightFieldLayoutHost` | Build/share `HeightFieldLayout` from camera |
+| `HeightFieldBridge` | Rig init: Allocate + Configure |
+| `HeightFieldLodCompute` | GPU LOD; owns RTs/buffers; implements `ILodSource` |
+| `HeightFieldChunkMeshDrawer` | Pull update + draw; owns Transform/material |
+| `ILodSource` | Drawer-facing LOD outputs |
+| `IHeightFieldSource` | Height RT writer |
 
-One layer, identity transform → should match current look after OS path fix.
+`GetData` runs once per `ILodSource` per frame inside `HeightFieldLodCompute`.
 
 ---
 
-## Phases
+## Coordinates
 
-| Phase | Work |
+Object-space `-h` → `TransformObjectToWorld`. See [urp-heightfield-lod-design.md](urp-heightfield-lod-design.md).
+
+---
+
+## Implementation status
+
+| Phase | Status |
 | --- | --- |
-| 0 | This document |
-| 1 | Object-space `h` + local chunk data; regression single layer |
-| 2 | Split Compute/Draw + cache by height key |
-| 3 | Stack + multiple layers |
-| 4 | Rotated normals, sort order, editor |
-
----
-
-## Tests
-
-- Single layer ≈ current visuals  
-- Two layers, same RT, Z offset → separated shells  
-- Two layers, shared `_lodCompute` → one classify + one `GetData`  
-- Rig yaw → displacement follows local -Z  
+| OS height path | Done (main) |
+| Compute / Drawer split | Done (feature branch) |
+| Multi-drawer sharing | Implemented; scene QA ongoing |
 
 ---
 
 ## Related
 
-- [urp-heightfield-lod-design.md](urp-heightfield-lod-design.md)  
+- [urp-heightfield-lod-design.md](urp-heightfield-lod-design.md)
 - [head-sway-lens-shift-camera.md](head-sway-lens-shift-camera.md)

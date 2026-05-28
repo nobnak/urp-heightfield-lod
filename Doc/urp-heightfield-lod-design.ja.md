@@ -14,7 +14,7 @@
 
 主な用途: フルスクリーン Heightfield 可視化、メディアアート、動的シミュレーション表示。
 
-多レイヤー・3 段階パイプライン・座標系の整理: [heightfield-lod-layered-design.ja.md](heightfield-lod-layered-design.ja.md)
+多レイヤー・コンテキストマップ・全体構成: [heightfield-lod-layered-design.ja.md](heightfield-lod-layered-design.ja.md)（アルゴリズム詳細は本書）
 
 対象プラットフォーム: **Windows**（DX11/12、Shader Model 5.0）。
 
