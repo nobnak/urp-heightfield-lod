@@ -7,12 +7,13 @@ namespace App.Bridge
     [DisallowMultipleComponent]
     public sealed class HeightFieldBridge : MonoBehaviour
     {
+        [SerializeField] HeightFieldLayoutHost _layoutHost;
         [SerializeField] Camera _camera;
         [SerializeField] int _barrierChunks = 2;
         [SerializeField] MonoBehaviour _heightSource;
-        [SerializeField] HeightFieldLodRenderer _lodRenderer;
+        [SerializeField] HeightFieldLodCompute _lodCompute;
+        [SerializeField] HeightFieldChunkMeshDrawer _drawer;
 
-        HeightFieldLayout _layout;
         int _lastW = -1;
         int _lastH = -1;
         float _lastOrtho = -1f;
@@ -21,9 +22,13 @@ namespace App.Bridge
 
         void Reset()
         {
+            _layoutHost = GetComponent<HeightFieldLayoutHost>();
+            if (_layoutHost == null)
+                _layoutHost = gameObject.AddComponent<HeightFieldLayoutHost>();
             _camera = Camera.main;
             _heightSource = FindHeightSourceOn(gameObject);
-            _lodRenderer = GetComponent<HeightFieldLodRenderer>();
+            _lodCompute = GetComponent<HeightFieldLodCompute>();
+            _drawer = GetComponent<HeightFieldChunkMeshDrawer>();
         }
 
         void OnValidate()
@@ -37,48 +42,67 @@ namespace App.Bridge
         void OnDisable()
         {
             HeightSource?.Release();
-            _lodRenderer?.Release();
+            _lodCompute?.Release();
+            _drawer?.Release();
         }
 
         void Update()
         {
-            var source = HeightSource;
-            if (_camera == null || source == null || _lodRenderer == null)
-                return;
-
-            if (NeedsRebuild())
+            var cam = ResolveCamera();
+            if (cam == null) return;
+            if (NeedsRebuild(cam))
                 TryRebuild(force: true);
-
-            source.UpdateHeight(_layout, Time.time);
-            _lodRenderer.Tick(source.HeightTexture, Time.deltaTime);
         }
 
-        bool NeedsRebuild()
+        bool NeedsRebuild(Camera cam)
         {
-            return _camera.pixelWidth != _lastW
-                || _camera.pixelHeight != _lastH
-                || !Mathf.Approximately(_camera.orthographicSize, _lastOrtho);
+            return cam.pixelWidth != _lastW
+                || cam.pixelHeight != _lastH
+                || !Mathf.Approximately(cam.orthographicSize, _lastOrtho);
         }
 
         void TryRebuild(bool force)
         {
             var source = HeightSource;
-            if (_camera == null || source == null) return;
-            if (!force && !NeedsRebuild()) return;
+            if (source == null || _lodCompute == null) return;
 
-            _layout = HeightFieldLayout.FromCamera(_camera, _barrierChunks);
-            _lastW = _camera.pixelWidth;
-            _lastH = _camera.pixelHeight;
-            _lastOrtho = _camera.orthographicSize;
+            var cam = ResolveCamera();
+            if (cam == null) return;
+            if (!force && !NeedsRebuild(cam) && _lodCompute.LodMeshes != null)
+                return;
 
-            source.Allocate(_layout);
-            _lodRenderer.Configure(_layout, _camera);
+            var layout = ResolveLayout(cam);
+            if (layout.TexWidth <= 0) return;
+
+            _lastW = cam.pixelWidth;
+            _lastH = cam.pixelHeight;
+            _lastOrtho = cam.orthographicSize;
+
+            source.Allocate(layout);
+            _lodCompute.Configure(layout);
+            if (_drawer != null)
+                _drawer.Configure(layout, cam);
+        }
+
+        Camera ResolveCamera()
+        {
+            if (_layoutHost != null && _layoutHost.Camera != null)
+                return _layoutHost.Camera;
+            return _camera;
+        }
+
+        HeightFieldLayout ResolveLayout(Camera cam)
+        {
+            if (_layoutHost != null && _layoutHost.EnsureLayout())
+                return _layoutHost.Layout;
+            return HeightFieldLayout.FromCamera(cam, _barrierChunks);
         }
 
         static MonoBehaviour FindHeightSourceOn(GameObject go)
         {
             var components = go.GetComponents<MonoBehaviour>();
-            for (int i = 0; i < components.Length; i++) {
+            for (int i = 0; i < components.Length; i++)
+            {
                 if (components[i] is IHeightFieldSource)
                     return components[i];
             }

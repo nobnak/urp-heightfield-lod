@@ -30,7 +30,9 @@ namespace App.Editor
             rig.transform.rotation = Quaternion.identity;
 
             var sine = rig.AddComponent<SineHeightFieldSource>();
-            var lod = rig.AddComponent<HeightFieldLodRenderer>();
+            var host = rig.AddComponent<HeightFieldLayoutHost>();
+            var compute = rig.AddComponent<HeightFieldLodCompute>();
+            var drawer = rig.AddComponent<HeightFieldChunkMeshDrawer>();
             rig.AddComponent<HeightFieldBridge>();
 
             var fill = AssetDatabase.LoadAssetAtPath<ComputeShader>(
@@ -52,24 +54,37 @@ namespace App.Editor
             soSine.ApplyModifiedPropertiesWithoutUndo();
 
             var mat = litShader != null ? new Material(litShader) : null;
-            var soLod = new SerializedObject(lod);
-            soLod.FindProperty("_material").objectReferenceValue = mat;
-            soLod.FindProperty("_normalShader").objectReferenceValue = normalFromHeight;
-            soLod.FindProperty("_curvatureShader").objectReferenceValue = curvature;
-            soLod.FindProperty("_reductionShader").objectReferenceValue = reduction;
-            soLod.FindProperty("_classifyShader").objectReferenceValue = classify;
-            soLod.FindProperty("_neighborShader").objectReferenceValue = neighbor;
-            soLod.ApplyModifiedPropertiesWithoutUndo();
+            var soCompute = new SerializedObject(compute);
+            soCompute.FindProperty("_normalShader").objectReferenceValue = normalFromHeight;
+            soCompute.FindProperty("_curvatureShader").objectReferenceValue = curvature;
+            soCompute.FindProperty("_reductionShader").objectReferenceValue = reduction;
+            soCompute.FindProperty("_classifyShader").objectReferenceValue = classify;
+            soCompute.FindProperty("_neighborShader").objectReferenceValue = neighbor;
+            soCompute.ApplyModifiedPropertiesWithoutUndo();
+
+            var soHost = new SerializedObject(host);
+            soHost.FindProperty("_camera").objectReferenceValue = cam;
+            soHost.ApplyModifiedPropertiesWithoutUndo();
+
+            var soDrawer = new SerializedObject(drawer);
+            soDrawer.FindProperty("_layoutHost").objectReferenceValue = host;
+            soDrawer.FindProperty("_lod").objectReferenceValue = compute;
+            soDrawer.FindProperty("_heightSource").objectReferenceValue = sine;
+            soDrawer.FindProperty("_material").objectReferenceValue = mat;
+            soDrawer.FindProperty("_camera").objectReferenceValue = cam;
+            soDrawer.ApplyModifiedPropertiesWithoutUndo();
 
             var bridge = rig.GetComponent<HeightFieldBridge>();
             var soBridge = new SerializedObject(bridge);
+            soBridge.FindProperty("_layoutHost").objectReferenceValue = host;
             soBridge.FindProperty("_camera").objectReferenceValue = cam;
             soBridge.FindProperty("_heightSource").objectReferenceValue = sine;
-            soBridge.FindProperty("_lodRenderer").objectReferenceValue = lod;
+            soBridge.FindProperty("_lodCompute").objectReferenceValue = compute;
+            soBridge.FindProperty("_drawer").objectReferenceValue = drawer;
             soBridge.ApplyModifiedPropertiesWithoutUndo();
 
             Selection.activeGameObject = rig;
-            Debug.Log("HeightField rig created. Camera looks +Z; mesh on XY plane (Quad convention, normal -Z).");
+            Debug.Log("HeightField rig created (split Compute + Drawer).");
         }
     }
 }
