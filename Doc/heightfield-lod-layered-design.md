@@ -190,7 +190,7 @@ Rename `WorldScaleCenter` → `LocalScaleCenter` in `ChunkInstanceData`.
 | Current | Target |
 | --- | --- |
 | `HeightFieldBridge` | `HeightFieldStack` + `HeightFieldLayer`(s) |
-| `HeightFieldLodRenderer` | Compute + Draw + Cache |
+| Legacy monolith | `HeightFieldLodCompute` + `HeightFieldChunkMeshDrawer` |
 | Single rig menu | Stack + layer setup |
 
 One layer, identity transform → should match current look after OS path fix.

@@ -195,14 +195,14 @@ There is **no barrier LOD cap** (no `min(lod, barrierMaxLod)`). Outer chunks mus
 - `IHeightFieldSource`: writes meters into `RenderTexture` each frame.
 - `RenderTexture`: `RFloat`, size = `layout.TexWidth × layout.TexHeight`.
 - Sample: `SineHeightFieldSource` (procedural sine in world XY over full texture including barrier).
-- External simulation implements `IHeightFieldSource`; Bridge connects to `HeightFieldLodRenderer`.
+- External simulation implements `IHeightFieldSource`; Bridge connects to `HeightFieldLodCompute` / `HeightFieldChunkMeshDrawer`.
 
 Update order per frame (Bridge `Update`):
 
 ```text
 1. Rebuild if pixel size or orthoSize changed
 2. IHeightFieldSource.UpdateHeight(layout, time)   // ComputeShader.Dispatch
-3. HeightFieldLodRenderer.Tick(height)
+3. HeightFieldLodCompute.EnsureUpdated(layout, height) (pulled by Drawer)
 ```
 
 ---
@@ -338,7 +338,7 @@ LOD index is implicit from which draw call / buffer is used.
 
 # Normal map from height
 
-Each frame, before curvature, `HeightFieldLodRenderer.RunNormals` dispatches **`NormalFromHeight.compute`** into an `ARGBHalf` RT (`_NormalTex`), same size as `HeightTex`.
+Each frame, before curvature, `HeightFieldLodCompute` dispatches **`NormalFromHeight.compute`** into an `ARGBHalf` RT (`_NormalTex`), same size as `HeightTex`.
 
 ### Gradient → world normal
 
@@ -391,7 +391,7 @@ Main light: URP `GetMainLight` (+ shadow coord when enabled). Directional **dist
 | Draw | `Graphics.DrawMeshInstancedIndirect` per LOD mesh |
 | Cameras | Any non-Preview camera whose mask includes the heightfield rig layer; shadow passes use the same rule |
 | Depth | Write ON |
-| Materials | `HeightFieldLit` or `HeightFieldToon` on `HeightFieldLodRenderer` |
+| Materials | `HeightFieldLit` or `HeightFieldToon` on `HeightFieldChunkMeshDrawer` |
 | Avoid | Geometry shader, CPU mesh rebuild, runtime topology, hardware tessellation |
 
 ---

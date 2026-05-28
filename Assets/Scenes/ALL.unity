@@ -734,8 +734,10 @@ GameObject:
   - component: {fileID: 1517204971}
   - component: {fileID: 1517204970}
   - component: {fileID: 1517204972}
-  - component: {fileID: 1517204969}
   - component: {fileID: 1517204968}
+  - component: {fileID: 1517204975}
+  - component: {fileID: 1517204974}
+  - component: {fileID: 1517204973}
   m_Layer: 0
   m_Name: HeightFieldRig
   m_TagString: Untagged
@@ -755,37 +757,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a59b12f0ed58c8845a36da4c4cdf6fe3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: App::App.Bridge.HeightFieldBridge
+  _layoutHost: {fileID: 1517204975}
   _camera: {fileID: 330585545}
   _barrierChunks: 2
   _heightSource: {fileID: 1517204972}
-  _lodRenderer: {fileID: 1517204969}
---- !u!114 &1517204969
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1517204967}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 214067b9ccd05f242ac7d4c69bd6157a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: HeightFieldLod::HeightFieldLod.HeightFieldLodRenderer
-  _material: {fileID: 2100000, guid: 48a2bd87b0740304398d70de4dc096f9, type: 2}
-  _normalShader: {fileID: 7200000, guid: 3fd5845bf3e0e42469ea89c5c765dd98, type: 3}
-  _curvatureShader: {fileID: 7200000, guid: 1655ced9a0d249f4897878af2fbf7aba, type: 3}
-  _reductionShader: {fileID: 7200000, guid: 4b34b9b4393cdb140a8ba9b86cbbbc2a, type: 3}
-  _classifyShader: {fileID: 7200000, guid: 4a562e269a1e3144c95edfb1d7bb9865, type: 3}
-  _neighborShader: {fileID: 7200000, guid: 27dbdd2c6088c374a9a4465ae7ec8fba, type: 3}
-  _skirtDepthMeters: 0.01
-  _curvatureScale: 0.1
-  _lodUpHigh: 0.7
-  _lodUpMid: 0.4
-  _lodUpLow: 0.15
-  _lodDownHigh: 0.6
-  _lodDownMid: 0.45
-  _lodDownLow: 0.12
-  _castShadows: 0
+  _lodCompute: {fileID: 1517204974}
+  _drawer: {fileID: 1517204973}
 --- !u!114 &1517204970
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -836,6 +813,64 @@ MonoBehaviour:
   _dimension: 2
   _lacunarity: 2
   _speed: 0.1
+--- !u!114 &1517204973
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1517204967}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 69a9cba1ef1cc48478b182d5db8403ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: HeightFieldLod::HeightFieldLod.HeightFieldChunkMeshDrawer
+  _layoutHost: {fileID: 1517204975}
+  _lod: {fileID: 1517204974}
+  _heightSource: {fileID: 1517204972}
+  _material: {fileID: 2100000, guid: 48a2bd87b0740304398d70de4dc096f9, type: 2}
+  _camera: {fileID: 0}
+  _sortOrder: 0
+  _castShadows: 0
+--- !u!114 &1517204974
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1517204967}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8bbace27fe87f943b41d8c81eb68753, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: HeightFieldLod::HeightFieldLod.HeightFieldLodCompute
+  _normalShader: {fileID: 7200000, guid: 3fd5845bf3e0e42469ea89c5c765dd98, type: 3}
+  _curvatureShader: {fileID: 7200000, guid: 1655ced9a0d249f4897878af2fbf7aba, type: 3}
+  _reductionShader: {fileID: 7200000, guid: 4b34b9b4393cdb140a8ba9b86cbbbc2a, type: 3}
+  _classifyShader: {fileID: 7200000, guid: 4a562e269a1e3144c95edfb1d7bb9865, type: 3}
+  _neighborShader: {fileID: 7200000, guid: 27dbdd2c6088c374a9a4465ae7ec8fba, type: 3}
+  _skirtDepthMeters: 0.01
+  _curvatureScale: 0.1
+  _lodUpHigh: 0.7
+  _lodUpMid: 0.4
+  _lodUpLow: 0.15
+  _lodDownHigh: 0.6
+  _lodDownMid: 0.45
+  _lodDownLow: 0.12
+--- !u!114 &1517204975
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1517204967}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b111b110062b4b74b931218eea2cb747, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: HeightFieldLod::HeightFieldLod.HeightFieldLayoutHost
+  _camera: {fileID: 330585545}
+  _barrierChunks: 2
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -15,7 +15,7 @@
 | 深度・重ね | 層の前後は **レイヤー Transform**（剛体）+ 同一 HF なら同じ `h`。**view 深度**として解釈するのが表示として自然 |
 | LOD 閾値 | **HeightTex ごとに同一**（シーン内で可変にしない）。Compute のパラメータ差による分岐は作らない |
 | LOD 共有 | 同じ HeightTex を使う場合は **ILodSource 参照で共有**（キャッシュは不要） |
-| `GetData` | `HeightFieldLodRenderer.BuildInstanceLists` 内 **1 箇所のみ**。同一 HeightTex の複数レイヤーでは 1 回/フレームに抑える |
+| `GetData` | `HeightFieldLodCompute.BuildInstanceLists` 内 **1 箇所のみ**。同一 HeightTex の複数レイヤーでは 1 回/フレームに抑える |
 
 ---
 
@@ -199,7 +199,7 @@ Stack/Layer という名前ではなく、**Layout + フレーム順序**だけ�
 | Registry | （任意）同一 HeightTex に対するルート Compute の集約。**キャッシュは不要** |
 | 順序 | §オーケストレーション |
 
-`HeightFieldBridge` は Host + 単一 Compute + 単一 Drawer への移行用ラッパ。
+`HeightFieldBridge` は Host + Compute + Drawer を束ねる薄いコンポーネント。
 
 ### `ILodSource`（新規インターフェース案）
 
@@ -251,7 +251,7 @@ Host:
 **現状:**
 
 ```csharp
-// HeightFieldLodRenderer.BuildInstanceLists
+// HeightFieldLodCompute.BuildInstanceLists
 _lodBuffer.GetData(_lodData);
 ```
 
@@ -292,7 +292,7 @@ o.positionCS = TransformWorldToHClip(posWS);
 | 現状 | 移行後 |
 | --- | --- |
 | `HeightFieldBridge` | `HeightFieldLayoutHost` + 1 Compute + 1 Drawer |
-| `HeightFieldLodRenderer` | `HeightFieldLodCompute` + `HeightFieldChunkMeshDrawer` |
+| （旧一体型） | `HeightFieldLodCompute` + `HeightFieldChunkMeshDrawer` |
 | `ChunkInstanceData` | ローカル中心 + Drawer の Transform |
 | 単一 Rig メニュー | Host + Compute/Drawer ペア |
 

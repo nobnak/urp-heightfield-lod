@@ -194,14 +194,14 @@ uvScale  = (32 / texW, 32 / texH)
 - `IHeightFieldSource`: 毎フレームメートル単位で `RenderTexture` に書き込む。
 - `RenderTexture`: `RFloat`、サイズ = `layout.TexWidth × layout.TexHeight`。
 - サンプル: `SineHeightFieldSource`（バリア込み全テクスチャにワールド XY 正弦波）。
-- 外部シミュレーションは `IHeightFieldSource` を実装。Bridge が `HeightFieldLodRenderer` へ接続。
+- 外部シミュレーションは `IHeightFieldSource` を実装。Bridge が `HeightFieldLodCompute` / `HeightFieldChunkMeshDrawer` へ接続。
 
 毎フレームの更新順（Bridge `Update`）:
 
 ```text
 1. ピクセルサイズまたは orthoSize 変化時にリビルド
 2. IHeightFieldSource.UpdateHeight(layout, time)   // ComputeShader.Dispatch
-3. HeightFieldLodRenderer.Tick(height)
+3. HeightFieldLodCompute.EnsureUpdated(layout, height)（Drawer が pull）
 ```
 
 ---
@@ -337,7 +337,7 @@ LOD 番号はどの draw / バッファかで暗黙的に決まる。
 
 # 法線マップ（高さから生成）
 
-毎フレーム、曲率の前に `HeightFieldLodRenderer.RunNormals` が **`NormalFromHeight.compute`** を `HeightTex` と同サイズの `ARGBHalf` RT（`_NormalTex`）へ dispatch する。
+毎フレーム、曲率の前に `HeightFieldLodCompute` が **`NormalFromHeight.compute`** を `HeightTex` と同サイズの `ARGBHalf` RT（`_NormalTex`）へ dispatch する。
 
 ### 勾配 → ワールド法線
 
@@ -390,7 +390,7 @@ n ∝ (-∂h/∂x · pixelWorldY, -∂h/∂y · pixelWorldX, -pixelWorldX · pix
 | 描画 | LOD メッシュごとに `Graphics.DrawMeshInstancedIndirect` |
 | カメラ | Preview 以外で Rig レイヤーをマスクに含むカメラ。シャドウパスも同条件 |
 | 深度 | 書き込み ON |
-| マテリアル | `HeightFieldLodRenderer` に Lit または Toon |
+| マテリアル | `HeightFieldChunkMeshDrawer` に Lit または Toon |
 | 避ける | ジオメトリシェーダ、CPU メッシュ再構築、ランタイムトポロジ、HW テッセレーション |
 
 ---
