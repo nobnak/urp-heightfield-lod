@@ -2,7 +2,7 @@
     "name": "App",
     "rootNamespace": "App",
     "references": [
-        "HeightField",
+        "HeightField.Samples",
         "HeightFieldLod",
         "Unity.Mathematics"
     ],

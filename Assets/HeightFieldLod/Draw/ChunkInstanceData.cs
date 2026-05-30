@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using HeightField;
 using UnityEngine;
 
 namespace HeightFieldLod
@@ -11,7 +12,7 @@ namespace HeightFieldLod
         public Vector4 WorldScaleCenter;
         public Vector4 UvScaleOffset;
 
-        public static ChunkInstanceData Create(HeightField.HeightFieldLayout layout, int ix, int iy)
+        public static ChunkInstanceData Create(HeightFieldLayout layout, int ix, int iy)
         {
             layout.GetChunkCenter(ix, iy, out float cx, out float cy);
             layout.GetChunkUvTile(ix, iy, out Vector2 uvOff, out Vector2 uvScale);

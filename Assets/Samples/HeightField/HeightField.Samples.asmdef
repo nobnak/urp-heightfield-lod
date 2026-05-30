@@ -1,7 +1,9 @@
 {
-    "name": "HeightField",
+    "name": "HeightField.Samples",
     "rootNamespace": "HeightField",
-    "references": [],
+    "references": [
+        "HeightFieldLod"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

@@ -23,23 +23,17 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │ App（シーン組み立て）                                              │
 │   HeightFieldBridge … Rig の Allocate / Configure               │
-│   IHeightFieldSource 実装（Sine / Musgrave / 外部）               │
 └────────────────────────────┬────────────────────────────────────┘
-                             │ 参照
+                             │
 ┌────────────────────────────▼────────────────────────────────────┐
-│ HeightField（高さ場ドメイン）                                       │
-│   HeightFieldLayout, IHeightFieldSource, HeightFieldSourceUtil  │
-└────────────────────────────┬────────────────────────────────────┘
-                             │ layout + HeightTex
-┌────────────────────────────▼────────────────────────────────────┐
-│ HeightFieldLod（LOD 描画ドメイン）                                  │
-│   LayoutHost → LodCompute → ChunkMeshDrawer                     │
-│   ILodSource, シェーダ, ChunkMeshBuilder                         │
-└────────────────────────────┬────────────────────────────────────┘
-                             │ URP
-┌────────────────────────────▼────────────────────────────────────┐
-│ Unity / URP（外部）                                                │
-│   Camera, RenderPipeline, ComputeShader                         │
+│ HeightFieldLod（コア）                                            │
+│   Contracts … IHeightFieldSource, HeightFieldLayout, ILodSource │
+│   Layout / Compute / Draw / Util / Shaders                      │
+└────────────────────────────▲────────────────────────────────────┘
+                             │ 参照（契約のみ）
+┌────────────────────────────┴────────────────────────────────────┐
+│ Samples/HeightField（任意の Height 実装）                           │
+│   SineHeightFieldSource, MusgraveHeightFieldSource              │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -62,11 +56,10 @@
 
 | コンテキスト | asmdef | 責務 | 公開の契約 |
 | --- | --- | --- | --- |
-| **HeightField** | `HeightField` | レイアウト定義、高さ RT の生成契約 | `HeightFieldLayout`, `IHeightFieldSource` |
-| **HeightFieldLod** | `HeightFieldLod` | 曲率/LOD 計算、間接描画、シェーダ | `ILodSource`, `HeightFieldLodCompute`, `HeightFieldChunkMeshDrawer` |
-| **App.Bridge** | `App` | シーン Rig の配線（Allocate/Configure） | `HeightFieldBridge` |
-| **App（任意）** | `App` | カメラ揺れ・ビュー運動（heightfield 非依存） | `HeadSwayLensShiftCamera` 等 |
-| **Unity / URP** | — | カメラ、レンダーパイプライン | `Camera`, `RenderTexture`, URP passes |
+| **HeightFieldLod** | `HeightFieldLod` | 契約、layout、曲率/LOD、描画、シェーダ | `IHeightFieldSource`, `HeightFieldLayout`, `ILodSource` |
+| **Samples** | `HeightField.Samples` | サンプル Height 実装 | `SineHeightFieldSource` 等 |
+| **App.Bridge** | `App` | シーン Rig の配線 | `HeightFieldBridge` |
+| **Unity / URP** | — | カメラ、レンダーパイプライン | 外部 |
 
 ### コンテキスト関係図
 
@@ -81,18 +74,22 @@ flowchart TB
     BR[HeightFieldBridge]
   end
 
-  subgraph hf["HeightField"]
-    LAY[HeightFieldLayout]
-    IHS[IHeightFieldSource]
-    UTIL[HeightFieldSourceUtil]
+  subgraph samples["Samples/HeightField"]
+    SINE[SineHeightFieldSource]
+    MUSG[MusgraveHeightFieldSource]
   end
 
   subgraph hflod["HeightFieldLod"]
-    HOST[HeightFieldLayoutHost]
-    COMP[HeightFieldLodCompute]
-    DRAW[HeightFieldChunkMeshDrawer]
-    ILOD[ILodSource]
-    SH[Shaders / Compute]
+    subgraph contracts["Contracts"]
+      LAY[HeightFieldLayout]
+      IHS[IHeightFieldSource]
+      ILOD[ILodSource]
+    end
+    HOST[LayoutHost]
+    COMP[LodCompute]
+    DRAW[ChunkMeshDrawer]
+    UTIL[HeightFieldSourceUtil]
+    SH[Shaders]
   end
 
   CAM --> HOST
@@ -101,6 +98,8 @@ flowchart TB
   BR --> IHS
   BR --> COMP
   BR --> DRAW
+  SINE --> IHS
+  MUSG --> IHS
   HOST --> LAY
   IHS --> LAY
   UTIL -.-> IHS
@@ -109,7 +108,6 @@ flowchart TB
   DRAW --> ILOD
   DRAW --> IHS
   DRAW --> HOST
-  DRAW --> URP
   COMP --> SH
   DRAW --> SH
   LAY --> COMP
@@ -126,20 +124,19 @@ flowchart TB
 | `HeightFieldChunkMeshDrawer` | `ILodSource` | 描画データ（**フォワード参照**） |
 | `HeightFieldChunkMeshDrawer` | `IHeightFieldSource` | 任意。pull で `EnsureUpdated` |
 | `HeightFieldLodCompute` | `HeightTex` | 入力（Compute は他 Compute を参照しない） |
-| `HeightFieldLod` | `HeightField` | asmdef 参照（layout のみ） |
-| `App` | `HeightField`, `HeightFieldLod` | asmdef 参照 |
+| `HeightField.Samples` | `IHeightFieldSource`（HeightFieldLod 契約） | サンプル Height 実装 |
+| `App` | `HeightFieldLod`, `HeightField.Samples` | asmdef 参照 |
 
 ### 依存ルール（コンパイル時）
 
 ```text
-App          → HeightField, HeightFieldLod
-HeightFieldLod → HeightField
-HeightField    → （Unity のみ）
+App                 → HeightFieldLod, HeightField.Samples
+HeightField.Samples → HeightFieldLod（契約のみ）
+HeightFieldLod      → Unity / URP のみ
 ```
 
-- **HeightField** は **HeightFieldLod を知らない**（高さ場だけ）。
-- **HeightFieldLod** は layout と Height RT を受け取り、描画まで担当。
-- **App** はシーン用の「配線」に留める。
+- **HeightFieldLod** は Samples の具象型を知らない（`IHeightFieldSource` のみ）。
+- **Samples** は LOD 側の契約を実装する（依存性逆転）。
 
 ### 統合パターン（ランタイム）
 
@@ -151,6 +148,38 @@ HeightField    → （Unity のみ）
 | **層の姿勢** | 各 Drawer の `Transform`（OS で `-h` → `ObjectToWorld`） |
 
 モード enum は使わない。Inspector の参照だけで表現する。
+
+### フォルダ構成（`Assets/`）
+
+```text
+HeightFieldLod/                 asmdef: HeightFieldLod
+  Contracts/
+    IHeightFieldSource.cs       namespace HeightField
+    HeightFieldLayout.cs        namespace HeightField
+    ILodSource.cs               namespace HeightFieldLod
+  Layout/
+    HeightFieldLayoutHost.cs
+  Compute/
+    HeightFieldLodCompute.cs
+  Draw/
+    HeightFieldChunkMeshDrawer.cs
+    ChunkInstanceData.cs
+    ChunkMeshBuilder.cs
+  Util/
+    HeightFieldSourceUtil.cs     namespace HeightField
+  Shaders/
+  HeightFieldLod.asmdef
+
+Samples/HeightField/            asmdef: HeightField.Samples → HeightFieldLod
+  SineHeightFieldSource.cs
+  MusgraveHeightFieldSource.cs
+  Shaders/
+  HeightField.Samples.asmdef
+
+App/                            asmdef: App → HeightFieldLod, HeightField.Samples
+  Bridge/
+  Editor/
+```
 
 ---
 

@@ -65,23 +65,17 @@ Folders + asmdef inside `Assets/`; UPM packages later when stable.
 
 ```text
 Assets/
-  HeightField/           # asmdef: HeightField
-  HeightFieldLod/        # asmdef: HeightFieldLod (references HeightField)
-  App/                   # asmdef: App + App.Editor (references Unity.Mathematics)
-    Bridge/
-    HeadSway/            # optional head-sway camera matrices
-    ViewMotion/          # tangent-plane motion for head sway
-    Editor/              # scene rig setup menu
+  HeightFieldLod/        # asmdef: HeightFieldLod (contracts + LOD + draw)
+    Contracts/ Layout/ Compute/ Draw/ Util/ Shaders/
+  Samples/HeightField/   # asmdef: HeightField.Samples
+  App/                   # asmdef: App + App.Editor
 Doc/
-  urp-heightfield-lod-design.md
-  urp-heightfield-lod-design.ja.md
-  head-sway-lens-shift-camera.md
 ```
 
 | Assembly | Responsibility |
 | --- | --- |
-| `HeightField` | `HeightFieldLayout`, height RT allocation, `IHeightFieldSource`, samples (sine) |
-| `HeightFieldLod` | Height → normal map → curvature → LOD → draw (lit / toon shaders) |
+| `HeightFieldLod` | Contracts (`IHeightFieldSource`, `HeightFieldLayout`), curvature/LOD/draw, shaders |
+| `HeightField.Samples` | Sample height sources (Sine, Musgrave) |
 | `App` | Bridge; optional `HeadSwayLensShiftCamera` + `ViewMotion` |
 
 Editor menu: **GameObject → Height Field → Setup Sample Rig**.
@@ -90,7 +84,7 @@ Editor menu: **GameObject → Height Field → Setup Sample Rig**.
 
 # HeightFieldLayout (single source of truth)
 
-Defined in **`HeightField`**. Created only by the **Bridge** (`HeightFieldBridge`) and passed to Height + LOD.
+Defined in **`HeightFieldLod/Contracts`**. Created by **Bridge** / **LayoutHost** and passed to Height + LOD.
 
 ```csharp
 struct HeightFieldLayout
@@ -190,12 +184,11 @@ There is **no barrier LOD cap** (no `min(lod, barrierMaxLod)`). Outer chunks mus
 
 ---
 
-# Height Field (`HeightField` assembly)
+# Height Field (`HeightField.Samples` / external)
 
-- `IHeightFieldSource`: writes meters into `RenderTexture` each frame.
-- `RenderTexture`: `RFloat`, size = `layout.TexWidth × layout.TexHeight`.
-- Sample: `SineHeightFieldSource` (procedural sine in world XY over full texture including barrier).
-- External simulation implements `IHeightFieldSource`; Bridge connects to `HeightFieldLodCompute` / `HeightFieldChunkMeshDrawer`.
+- Contract `IHeightFieldSource` lives in **`HeightFieldLod/Contracts`**.
+- Samples: `SineHeightFieldSource`, `MusgraveHeightFieldSource` in `Assets/Samples/HeightField/`.
+- External simulations implement the same contract; Bridge connects to LOD/draw components.
 
 Update order per frame (Bridge `Update`):
 
@@ -295,7 +288,7 @@ Neighbor:  _LodIn = _LodBuffer  →  _LodOut = _LodScratch
 # LOD Pipeline (per frame)
 
 ```text
-1. Update HeightTex          (HeightField)
+1. Update HeightTex          (IHeightFieldSource / Samples)
 2. Normal map from height    (NormalFromHeight.compute, mirror boundaries)
 3. Curvature compute         (mirror boundaries)
 4. Reduction max pyramid     (optional / future)

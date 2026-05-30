@@ -65,22 +65,18 @@ P_{local} = (x,\ y,\ -h(x,y))
 
 ```text
 Assets/
-  HeightField/           # asmdef: HeightField
-  HeightFieldLod/        # asmdef: HeightFieldLod（HeightField を参照）
-  App/                   # asmdef: App + App.Editor（Unity.Mathematics 参照）
-    Bridge/
-    HeadSway/            # 任意: 頭部動揺用カメラ行列
-    ViewMotion/          # 接線平面の時間変化（頭振り）
-    Editor/              # シーン Rig セットアップメニュー
+  HeightFieldLod/        # asmdef: HeightFieldLod（契約 + LOD + 描画）
+    Contracts/             # IHeightFieldSource, HeightFieldLayout, ILodSource
+    Layout/ Compute/ Draw/ Util/ Shaders/
+  Samples/HeightField/   # asmdef: HeightField.Samples（サンプル Height 実装）
+  App/                   # asmdef: App + App.Editor
 Doc/
-  urp-heightfield-lod-design.md / .ja.md
-  head-sway-lens-shift-camera.md
 ```
 
 | アセンブリ | 責務 |
 | --- | --- |
-| `HeightField` | `HeightFieldLayout`、Height RT 確保、`IHeightFieldSource`、サンプル（正弦波） |
-| `HeightFieldLod` | Height → 法線 RT → 曲率 → LOD → 描画（Lit / Toon） |
+| `HeightFieldLod` | 契約（`IHeightFieldSource`, `HeightFieldLayout`）、曲率/LOD/描画、シェーダ |
+| `HeightField.Samples` | サンプル Height 実装（Sine / Musgrave） |
 | `App` | Bridge、任意で `HeadSwayLensShiftCamera` + `ViewMotion` |
 
 エディタメニュー: **GameObject → Height Field → Setup Sample Rig**。
@@ -89,7 +85,7 @@ Doc/
 
 # HeightFieldLayout（単一の真実の源）
 
-**`HeightField`** で定義。**Bridge**（`HeightFieldBridge`）だけが生成し、Height / LOD の両方に渡す。
+**`HeightFieldLod`**（`Contracts/`）で定義。**Bridge**（`HeightFieldBridge`）が生成し、Height / LOD に渡す。
 
 ```csharp
 struct HeightFieldLayout
@@ -189,12 +185,12 @@ uvScale  = (32 / texW, 32 / texH)
 
 ---
 
-# Height Field（`HeightField` アセンブリ）
+# Height Field（`HeightField.Samples` / 外部実装）
 
-- `IHeightFieldSource`: 毎フレームメートル単位で `RenderTexture` に書き込む。
+- 契約 `IHeightFieldSource` は **`HeightFieldLod/Contracts`** で定義。
 - `RenderTexture`: `RFloat`、サイズ = `layout.TexWidth × layout.TexHeight`。
-- サンプル: `SineHeightFieldSource`（バリア込み全テクスチャにワールド XY 正弦波）。
-- 外部シミュレーションは `IHeightFieldSource` を実装。Bridge が `HeightFieldLodCompute` / `HeightFieldChunkMeshDrawer` へ接続。
+- `HeightField.Samples`: `SineHeightFieldSource`, `MusgraveHeightFieldSource`。
+- 外部シミュレーションも同契約を実装。Bridge が `HeightFieldLodCompute` / `HeightFieldChunkMeshDrawer` へ接続。
 
 毎フレームの更新順（Bridge `Update`）:
 
@@ -294,7 +290,7 @@ neighbor パスで `clamp(lo, hi)` する前に、近傍 min/max で `lo > hi` �
 # LOD パイプライン（毎フレーム）
 
 ```text
-1. HeightTex 更新           (HeightField)
+1. HeightTex 更新           (IHeightFieldSource / Samples)
 2. 法線マップ生成             (NormalFromHeight.compute、ミラー境界)
 3. 曲率 Compute             (ミラー境界)
 4. max リダクションピラミッド  (任意 / 将来)

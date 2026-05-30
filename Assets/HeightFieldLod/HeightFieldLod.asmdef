@@ -2,7 +2,6 @@
     "name": "HeightFieldLod",
     "rootNamespace": "HeightFieldLod",
     "references": [
-        "HeightField",
         "Unity.RenderPipelines.Universal.Runtime"
     ],
     "includePlatforms": [],

@@ -36,7 +36,7 @@ namespace App.Editor
             rig.AddComponent<HeightFieldBridge>();
 
             var fill = AssetDatabase.LoadAssetAtPath<ComputeShader>(
-                "Assets/HeightField/Shaders/SineHeightFill.compute");
+                "Assets/Samples/HeightField/Shaders/SineHeightFill.compute");
             var normalFromHeight = AssetDatabase.LoadAssetAtPath<ComputeShader>(
                 "Assets/HeightFieldLod/Shaders/NormalFromHeight.compute");
             var curvature = AssetDatabase.LoadAssetAtPath<ComputeShader>(

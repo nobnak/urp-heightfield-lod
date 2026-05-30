@@ -3,7 +3,7 @@
     "rootNamespace": "App.Editor",
     "references": [
         "App",
-        "HeightField",
+        "HeightField.Samples",
         "HeightFieldLod"
     ],
     "includePlatforms": [
