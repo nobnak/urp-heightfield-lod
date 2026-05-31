@@ -8,10 +8,9 @@
 ## System overview
 
 ```text
-HeightFieldLod (core)     contracts + layout + compute + draw + shaders
+jp.nobnak.heightfield-lod (core UPM)   contracts + layout + compute + draw + shaders
         ▲
-HeightField.Samples       optional height implementations (Sine, Musgrave)
-App                       Bridge wiring
+Assets/Samples/HeightField             sample height sources + HeightFieldBridge
 ```
 
 **Pipeline:** Height `N` RTs → LOD `K` computes → Draw `M` drawers.
@@ -23,36 +22,33 @@ App                       Bridge wiring
 | Context | asmdef | Role |
 | --- | --- | --- |
 | **HeightFieldLod** | `HeightFieldLod` | `IHeightFieldSource`, `HeightFieldLayout`, `ILodSource`, LOD/draw |
-| **Samples** | `HeightField.Samples` | Sample `IHeightFieldSource` implementations |
-| **App** | `App` | `HeightFieldBridge` |
+| **Samples** | `HeightField.Samples` | Sample height implementations, `HeightFieldBridge` |
 
 ### Dependencies
 
 ```text
-App                 → HeightFieldLod, HeightField.Samples
 HeightField.Samples → HeightFieldLod (contracts only)
-HeightFieldLod      → URP only
+HeightFieldLod        → URP only
 ```
 
 ---
 
-## Folder layout (`Assets/`)
+## Draw cameras
+
+Same rule as [urp-heightfield-lod-design.md](urp-heightfield-lod-design.md#drawing-urp):
+
+- Hook: `RenderPipelineManager.beginCameraRendering`
+- Draw on every camera except `CameraType.Preview` when `cullingMask` includes the rig **layer** (`gameObject.layer`)
+- Shadow passes use the same rule
+- `HeightFieldLayoutHost._camera` and `HeightFieldBridge._camera` are for **layout only**, not draw filtering
+
+---
+
+## Folder layout
 
 ```text
-HeightFieldLod/
-  Contracts/   IHeightFieldSource, HeightFieldLayout, ILodSource
-  Layout/      HeightFieldLayoutHost
-  Compute/     HeightFieldLodCompute
-  Draw/        ChunkMeshDrawer, ChunkInstanceData, ChunkMeshBuilder
-  Util/        HeightFieldSourceUtil
-  Shaders/
-
-Samples/HeightField/
-  SineHeightFieldSource, MusgraveHeightFieldSource
-  Shaders/
-  HeightField.Samples.asmdef
-
-App/Bridge/, App/Editor/
+Packages/jp.nobnak.heightfield-lod/Runtime/   core (HeightFieldLod.asmdef)
+Assets/Samples/HeightField/                   dev samples → auto-copied to Samples~ on compile (`HeightFieldSampleCompileSync`)
 ```
 
 ---

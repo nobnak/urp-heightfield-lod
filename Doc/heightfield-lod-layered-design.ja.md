@@ -21,19 +21,15 @@
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│ App（シーン組み立て）                                              │
+│ Samples/HeightField（任意の Height 実装 + Rig 配線）                  │
+│   SineHeightFieldSource, MusgraveHeightFieldSource              │
 │   HeightFieldBridge … Rig の Allocate / Configure               │
 └────────────────────────────┬────────────────────────────────────┘
                              │
 ┌────────────────────────────▼────────────────────────────────────┐
-│ HeightFieldLod（コア）                                            │
+│ jp.nobnak.heightfield-lod（コア / UPM）                           │
 │   Contracts … IHeightFieldSource, HeightFieldLayout, ILodSource │
 │   Layout / Compute / Draw / Util / Shaders                      │
-└────────────────────────────▲────────────────────────────────────┘
-                             │ 参照（契約のみ）
-┌────────────────────────────┴────────────────────────────────────┐
-│ Samples/HeightField（任意の Height 実装）                           │
-│   SineHeightFieldSource, MusgraveHeightFieldSource              │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -57,8 +53,7 @@
 | コンテキスト | asmdef | 責務 | 公開の契約 |
 | --- | --- | --- | --- |
 | **HeightFieldLod** | `HeightFieldLod` | 契約、layout、曲率/LOD、描画、シェーダ | `IHeightFieldSource`, `HeightFieldLayout`, `ILodSource` |
-| **Samples** | `HeightField.Samples` | サンプル Height 実装 | `SineHeightFieldSource` 等 |
-| **App.Bridge** | `App` | シーン Rig の配線 | `HeightFieldBridge` |
+| **Samples** | `HeightField.Samples` | サンプル Height 実装、Rig 配線 | `SineHeightFieldSource`, `HeightFieldBridge` 等 |
 | **Unity / URP** | — | カメラ、レンダーパイプライン | 外部 |
 
 ### コンテキスト関係図
@@ -70,13 +65,10 @@ flowchart TB
     URP[URP RenderPipeline]
   end
 
-  subgraph app_bridge["App.Bridge"]
-    BR[HeightFieldBridge]
-  end
-
   subgraph samples["Samples/HeightField"]
     SINE[SineHeightFieldSource]
     MUSG[MusgraveHeightFieldSource]
+    BR[HeightFieldBridge]
   end
 
   subgraph hflod["HeightFieldLod"]
@@ -125,12 +117,11 @@ flowchart TB
 | `HeightFieldChunkMeshDrawer` | `IHeightFieldSource` | 任意。pull で `EnsureUpdated` |
 | `HeightFieldLodCompute` | `HeightTex` | 入力（Compute は他 Compute を参照しない） |
 | `HeightField.Samples` | `IHeightFieldSource`（HeightFieldLod 契約） | サンプル Height 実装 |
-| `App` | `HeightFieldLod`, `HeightField.Samples` | asmdef 参照 |
+| `HeightField.Samples` | `HeightFieldLod` | asmdef 参照（Bridge 配線含む） |
 
 ### 依存ルール（コンパイル時）
 
 ```text
-App                 → HeightFieldLod, HeightField.Samples
 HeightField.Samples → HeightFieldLod（契約のみ）
 HeightFieldLod      → Unity / URP のみ
 ```
@@ -149,36 +140,19 @@ HeightFieldLod      → Unity / URP のみ
 
 モード enum は使わない。Inspector の参照だけで表現する。
 
-### フォルダ構成（`Assets/`）
+### フォルダ構成
 
 ```text
-HeightFieldLod/                 asmdef: HeightFieldLod
-  Contracts/
-    IHeightFieldSource.cs       namespace HeightField
-    HeightFieldLayout.cs        namespace HeightField
-    ILodSource.cs               namespace HeightFieldLod
-  Layout/
-    HeightFieldLayoutHost.cs
-  Compute/
-    HeightFieldLodCompute.cs
-  Draw/
-    HeightFieldChunkMeshDrawer.cs
-    ChunkInstanceData.cs
-    ChunkMeshBuilder.cs
-  Util/
-    HeightFieldSourceUtil.cs     namespace HeightField
-  Shaders/
-  HeightFieldLod.asmdef
+Packages/jp.nobnak.heightfield-lod/   UPM コア
+  Runtime/                            asmdef: HeightFieldLod
+    Contracts/, Layout/, Compute/, Draw/, Util/, Shaders/
+  Editor/                             asmdef: HeightFieldLod.Editor
 
-Samples/HeightField/            asmdef: HeightField.Samples → HeightFieldLod
-  SineHeightFieldSource.cs
-  MusgraveHeightFieldSource.cs
-  Shaders/
-  HeightField.Samples.asmdef
-
-App/                            asmdef: App → HeightFieldLod, HeightField.Samples
-  Bridge/
-  Editor/
+Assets/Samples/HeightField/           開発用サンプル（コンパイル時に Samples~ へ自動コピー）
+  Bridge/HeightFieldBridge.cs
+  SineHeightFieldSource.cs, MusgraveHeightFieldSource.cs
+  Shaders/, Scenes/, Materials/, …
+  HeightField.Samples.asmdef          → HeightFieldLod
 ```
 
 ---
@@ -227,7 +201,7 @@ HeightTex B  ──→  LodCompute β  ──── Drawer 3
 | --- | --- | --- |
 | Height 更新 | `HeightFieldSourceUtil` | `Time.frameCount` + ソース参照 |
 | LOD 更新 | `HeightFieldLodCompute` | `Time.frameCount` + 同一 `height` RT |
-| 描画 | `HeightFieldChunkMeshDrawer` | カメラ cullingMask / `_camera` フィルタ |
+| 描画 | `HeightFieldChunkMeshDrawer` | `CameraType.Preview` 除外 + Rig レイヤーが `cullingMask` に含まれるカメラ（[描画仕様](urp-heightfield-lod-design.ja.md#描画urp)） |
 
 **Compute→Compute 参照はない。** 更新順は Drawer の描画コールバック起点で足りる。
 
@@ -240,6 +214,7 @@ HeightTex B  ──→  LodCompute β  ──── Drawer 3
 | 項目 | 内容 |
 | --- | --- |
 | 役割 | **Layout の単一の生成元**（カメラ pixel / ortho / barrier） |
+| `_camera` | Layout 生成専用。**描画カメラの限定には使わない** |
 | 再生成条件 | `pixelWidth`, `pixelHeight`, `orthographicSize` |
 | しないこと | Height / LOD / Draw |
 
@@ -248,6 +223,7 @@ HeightTex B  ──→  LodCompute β  ──── Drawer 3
 | 項目 | 内容 |
 | --- | --- |
 | 役割 | Rig の **初期化**（`Allocate` + `Configure`） |
+| `_camera` | LayoutHost 未設定時の fallback。**描画カメラの限定には使わない** |
 | しないこと | 毎フレームの LOD（Drawer が pull） |
 
 ### `IHeightFieldSource` / `HeightFieldSourceUtil`
@@ -272,6 +248,7 @@ HeightTex B  ──→  LodCompute β  ──── Drawer 3
 | --- | --- |
 | 役割 | `ILodSource` を参照して間接描画 |
 | 参照 | `_lod`（必須）, `_layoutHost`（推奨）, `_heightSource`（pull 用） |
+| 描画カメラ | `CameraType.Preview` 以外で、`gameObject.layer` が `cullingMask` に含まれるカメラすべて（シャドウパスも同条件）。[urp-heightfield-lod-design.ja.md](urp-heightfield-lod-design.ja.md) と同一 |
 | 層 | **GameObject の Transform** |
 
 ---
@@ -318,6 +295,7 @@ HeightTex B  ──→  LodCompute β  ──── Drawer 3
 | 2 Drawer、別 HeightTex | 独立形状 |
 | Rig 回転 | `h` がローカル -Z に追従 |
 | Head sway | 板固定 |
+| 複数カメラ | Rig レイヤーを `cullingMask` に含むカメラすべてで描画 |
 
 ---
 

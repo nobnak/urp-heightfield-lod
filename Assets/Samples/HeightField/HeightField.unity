@@ -131,7 +131,6 @@ GameObject:
   - component: {fileID: 330585545}
   - component: {fileID: 330585544}
   - component: {fileID: 330585547}
-  - component: {fileID: 330585548}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -158,7 +157,7 @@ Camera:
   serializedVersion: 2
   m_ClearFlags: 2
   m_BackGroundColor: {r: 0.078431375, g: 0.078431375, b: 0.078431375, a: 1}
-  m_projectionMatrixMode: 0
+  m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
   m_Iso: 200
@@ -257,42 +256,6 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
---- !u!114 &330585548
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 330585543}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9366291ed60e75340b7be208290eb974, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Jp.Nobnak.HeadSway::App.HeadSway.HeadSwayLensShiftCamera
-  _motion:
-    mode: 36
-    circleSize: {x: 1, y: 1}
-    circlePeriod: 6
-    noiseSize: {x: 1, y: 0}
-    noiseRate: 0.35
-    noiseSeed: 0
-    inertialSpring: 2
-    inertialDamping: 2
-    inertialNoiseAmp: {x: 3, y: 3}
-    inertialNoiseRate: 0.35
-    inertialNoiseSeed: 0
-    bobRespPeriod: 5
-    bobRespAmp: 1
-    bobHeartPeriod: 0.85714287
-    bobHeartAmp: 0.01
-    bobHeartExp: 4
-    fixedOffsetDirectionDeg: 60
-    fixedOffsetLength: 0
-    rotateSnoiseDeg: 10
-    rotateSnoiseRate: 0.1
-    rotateSnoiseSeed: 0
-  _focusDistance: 10
-  _useUnscaledTime: 0
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -384,7 +347,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 410087039}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.23957253, y: 0.42370564, z: -0.42995173, w: -0.76040787}
+  m_LocalRotation: {x: 0.21442412, y: -0.18370248, z: 0.13257022, w: 0.9501057}
   m_LocalPosition: {x: 4, y: 3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -438,7 +401,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!135 &447788986
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -581,148 +544,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1394143287
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1394143292}
-  - component: {fileID: 1394143291}
-  - component: {fileID: 1394143289}
-  - component: {fileID: 1394143288}
-  m_Layer: 0
-  m_Name: Scene View (Camera)
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!114 &1394143288
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1394143287}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7c4e8a1b2f9d3e6051a8b4c7d2e9f031, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: App::App.SceneViewCameraTracker
-  _syncWhenPlaying: 1
---- !u!114 &1394143289
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1394143287}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
-  m_RenderShadows: 1
-  m_RequiresDepthTextureOption: 2
-  m_RequiresOpaqueTextureOption: 2
-  m_CameraType: 0
-  m_Cameras: []
-  m_RendererIndex: -1
-  m_VolumeLayerMask:
-    serializedVersion: 2
-    m_Bits: 1
-  m_VolumeTrigger: {fileID: 0}
-  m_VolumeFrameworkUpdateModeOption: 2
-  m_RenderPostProcessing: 0
-  m_Antialiasing: 0
-  m_AntialiasingQuality: 2
-  m_StopNaN: 0
-  m_Dithering: 0
-  m_ClearDepth: 1
-  m_AllowXRRendering: 1
-  m_AllowHDROutput: 1
-  m_UseScreenCoordOverride: 0
-  m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
-  m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
-  m_RequiresDepthTexture: 0
-  m_RequiresColorTexture: 0
-  m_TaaSettings:
-    m_Quality: 3
-    m_FrameInfluence: 0.1
-    m_JitterScale: 1
-    m_MipBias: 0
-    m_VarianceClampScale: 0.9
-    m_ContrastAdaptiveSharpening: 0
-  m_Version: 2
---- !u!20 &1394143291
-Camera:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1394143287}
-  m_Enabled: 1
-  serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
-  m_projectionMatrixMode: 1
-  m_GateFitMode: 2
-  m_FOVAxisMode: 0
-  m_Iso: 200
-  m_ShutterSpeed: 0.005
-  m_Aperture: 16
-  m_FocusDistance: 10
-  m_FocalLength: 50
-  m_BladeCount: 5
-  m_Curvature: {x: 2, y: 11}
-  m_BarrelClipping: 0.25
-  m_Anamorphism: 0
-  m_SensorSize: {x: 36, y: 24}
-  m_LensShift: {x: 0, y: 0}
-  m_NormalizedViewPortRect:
-    serializedVersion: 2
-    x: 0
-    y: 0
-    width: 1
-    height: 1
-  near clip plane: 0.07114925
-  far clip plane: 14229.852
-  field of view: 32
-  orthographic: 0
-  orthographic size: 5
-  m_Depth: 0
-  m_CullingMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_RenderingPath: -1
-  m_TargetTexture: {fileID: 0}
-  m_TargetDisplay: 0
-  m_TargetEye: 3
-  m_HDR: 1
-  m_AllowMSAA: 1
-  m_AllowDynamicResolution: 0
-  m_ForceIntoRT: 0
-  m_OcclusionCulling: 1
-  m_StereoConvergence: 10
-  m_StereoSeparation: 0.022
---- !u!4 &1394143292
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1394143287}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0.10725755, y: 0.1904114, z: -0.020933786, w: 0.975603}
-  m_LocalPosition: {x: -8.187454, y: 4.9685764, z: -20.262663}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1517204967
 GameObject:
   m_ObjectHideFlags: 0
@@ -733,7 +554,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1517204971}
   - component: {fileID: 1517204970}
-  - component: {fileID: 1517204972}
   - component: {fileID: 1517204968}
   - component: {fileID: 1517204975}
   - component: {fileID: 1517204974}
@@ -760,7 +580,7 @@ MonoBehaviour:
   _layoutHost: {fileID: 1517204975}
   _camera: {fileID: 330585545}
   _barrierChunks: 2
-  _heightSource: {fileID: 1517204972}
+  _heightSource: {fileID: 1517204970}
   _lodCompute: {fileID: 1517204974}
   _drawer: {fileID: 1517204973}
 --- !u!114 &1517204970
@@ -770,14 +590,14 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1517204967}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ba42ca5940b24f940be0842b531c7294, type: 3}
   m_Name: 
   m_EditorClassIdentifier: HeightField::HeightField.SineHeightFieldSource
   _fillShader: {fileID: 7200000, guid: c8d9b14339132df4ca23ef03efce52cc, type: 3}
-  _amplitudeMeters: 0.5
-  _frequency: 2
+  _amplitudeMeters: 1
+  _frequency: 1
   _speed: 0.1
 --- !u!4 &1517204971
 Transform:
@@ -794,25 +614,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1517204972
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1517204967}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5c7256696b57c1d4cba9b10caf7a0426, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: HeightField::HeightField.MusgraveHeightFieldSource
-  _fillShader: {fileID: 7200000, guid: a7f2c8e19b3046d5a1e9f0b2c3d4e5f6, type: 3}
-  _amplitudeMeters: 1
-  _scale: 0.2
-  _detail: 6
-  _dimension: 2
-  _lacunarity: 2
-  _speed: 0.1
 --- !u!114 &1517204973
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -827,8 +628,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: HeightFieldLod::HeightFieldLod.HeightFieldChunkMeshDrawer
   _layoutHost: {fileID: 1517204975}
   _lod: {fileID: 1517204974}
-  _heightSource: {fileID: 1517204972}
-  _material: {fileID: 2100000, guid: 48a2bd87b0740304398d70de4dc096f9, type: 2}
+  _heightSource: {fileID: 1517204970}
+  _material: {fileID: 2100000, guid: 660fcee1fbd74304b9e206e30fb0e0ec, type: 2}
   _sortOrder: 0
   _castShadows: 0
 --- !u!114 &1517204974
@@ -879,4 +680,3 @@ SceneRoots:
   - {fileID: 832575519}
   - {fileID: 1517204971}
   - {fileID: 447788989}
-  - {fileID: 1394143292}

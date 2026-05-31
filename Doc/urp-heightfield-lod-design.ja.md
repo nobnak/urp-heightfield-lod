@@ -164,6 +164,7 @@ uvScale  = (32 / texW, 32 / texH)
 | リビルドしない | `lensShift`、位置・回転、カスタム `projectionMatrix` / `worldToCameraMatrix`（頭振りなど） |
 | LOD 指標 | 曲率 / 複雑度 — **カメラ距離ではない** |
 | 描画カメラ | `CameraType.Preview` 以外で、Rig の **レイヤー**（`gameObject.layer`）が `cullingMask` に含まれるカメラすべて |
+| Layout 用カメラ | `HeightFieldLayoutHost` / `HeightFieldBridge` の `_camera` は layout 生成専用。描画対象の限定には使わない |
 | 頭振り（任意） | 正射影カメラに `HeadSwayLensShiftCamera`。リグ Transform 固定で `ConvergingLensShift` が行列更新 — [頭部動揺カメラ](#頭部動揺カメラ任意) |
 
 ---

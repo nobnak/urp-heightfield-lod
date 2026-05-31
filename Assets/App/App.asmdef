@@ -1,18 +1,14 @@
-{
-    "name": "App",
-    "rootNamespace": "App",
-    "references": [
-        "HeightField.Samples",
-        "HeightFieldLod",
-        "Unity.Mathematics"
-    ],
-    "includePlatforms": [],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
-}
+{
+    "name": "App",
+    "rootNamespace": "App",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
