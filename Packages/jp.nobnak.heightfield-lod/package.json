@@ -1,0 +1,22 @@
+{
+  "name": "jp.nobnak.heightfield-lod",
+  "version": "0.2.0",
+  "displayName": "Height Field LOD",
+  "description": "Adaptive heightfield LOD for orthographic URP cameras.",
+  "unity": "6000.0",
+  "author": {
+    "name": "nobnak",
+    "url": "https://github.com/nobnak"
+  },
+  "dependencies": {
+    "com.unity.render-pipelines.universal": "17.0.0",
+    "jp.nobnak.snoise": "2.3.5"
+  },
+  "samples": [
+    {
+      "displayName": "Height Field",
+      "description": "HeightField demo scene with Sine and Musgrave height sources.",
+      "path": "Samples~/HeightField"
+    }
+  ]
+}
