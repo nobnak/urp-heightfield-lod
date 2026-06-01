@@ -3,8 +3,12 @@ using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
 
-namespace HeightFieldLod.Editor
+namespace HeightFieldLod.Dev.Editor
 {
+    /// <summary>
+    /// Dev-only: copies <c>Assets/Samples/HeightField</c> into the embedded package <c>Samples~</c> for UPM publish.
+    /// Not shipped in jp.nobnak.heightfield-lod (lives under Assets/Editor in this repository).
+    /// </summary>
     [InitializeOnLoad]
     static class HeightFieldSampleCompileSync
     {
@@ -23,20 +27,17 @@ namespace HeightFieldLod.Editor
         {
             var src = Path.Combine(Application.dataPath, "Samples", SampleFolder);
             var packageRoot = Path.GetFullPath(Path.Combine("Packages", PackageName));
+            if (!Directory.Exists(packageRoot) || !Directory.Exists(src))
+                return;
+
             var dstRoot = Path.Combine(packageRoot, "Samples~");
             var dst = Path.Combine(dstRoot, SampleFolder);
-
-            if (!Directory.Exists(src))
-            {
-                Debug.LogWarning($"[HeightFieldLod] Sample source not found, skipping Samples~ sync: {src}");
-                return;
-            }
 
             if (Directory.Exists(dstRoot))
                 Directory.Delete(dstRoot, recursive: true);
 
             CopyDirectory(src, dst);
-            Debug.Log($"[HeightFieldLod] Synced samples on compile: {src} -> {dst}");
+            Debug.Log($"[HeightFieldLod.Dev] Synced samples: {src} -> {dst}");
         }
 
         static void CopyDirectory(string src, string dst)

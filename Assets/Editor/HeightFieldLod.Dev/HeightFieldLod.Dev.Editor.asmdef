@@ -1,9 +1,7 @@
 {
-    "name": "HeightFieldLod.Editor",
-    "rootNamespace": "HeightFieldLod.Editor",
-    "references": [
-        "HeightFieldLod"
-    ],
+    "name": "HeightFieldLod.Dev.Editor",
+    "rootNamespace": "HeightFieldLod.Dev.Editor",
+    "references": [],
     "includePlatforms": [
         "Editor"
     ],

@@ -50,8 +50,9 @@ Same rule as [urp-heightfield-lod-design.md](urp-heightfield-lod-design.md#drawi
 
 ```text
 Packages/jp.nobnak.heightfield-lod/Runtime/   core (HeightFieldLod.asmdef)
-Assets/Samples/HeightField/                   dev samples + Editor/ → auto-copied to Samples~ on compile (`HeightFieldSampleCompileSync`)
-Packages/jp.nobnak.heightfield-lod/Editor/   core-only (`HeightFieldSampleCompileSync`)
+Assets/Samples/HeightField/                   dev samples + Editor/ (UPM sample source)
+Assets/Editor/HeightFieldLod.Dev/             dev-only: sync Samples → package `Samples~` on compile
+Packages/jp.nobnak.heightfield-lod/           Runtime only (no Editor; not published to consumers)
 ```
 
 ---
