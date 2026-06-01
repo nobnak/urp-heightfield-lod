@@ -2,8 +2,7 @@
     "name": "HeightFieldLod.Editor",
     "rootNamespace": "HeightFieldLod.Editor",
     "references": [
-        "HeightFieldLod",
-        "HeightField.Samples"
+        "HeightFieldLod"
     ],
     "includePlatforms": [
         "Editor"
