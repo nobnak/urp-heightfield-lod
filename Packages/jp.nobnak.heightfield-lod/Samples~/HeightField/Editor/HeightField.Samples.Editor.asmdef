@@ -1,0 +1,19 @@
+{
+    "name": "HeightField.Samples.Editor",
+    "rootNamespace": "HeightField.Samples.Editor",
+    "references": [
+        "HeightField.Samples",
+        "HeightFieldLod"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

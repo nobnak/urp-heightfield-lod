@@ -1,6 +1,6 @@
 {
   "name": "jp.nobnak.heightfield-lod",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "displayName": "Height Field LOD",
   "description": "Adaptive heightfield LOD for orthographic URP cameras.",
   "unity": "6000.0",

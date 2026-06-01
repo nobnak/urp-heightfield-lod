@@ -148,7 +148,8 @@ HeightFieldLod             → Unity / URP のみ
 Packages/jp.nobnak.heightfield-lod/   UPM コア
   Runtime/                            asmdef: HeightFieldLod
     Contracts/, Layout/, Compute/, Draw/, Util/, Shaders/
-Assets/Editor/HeightFieldLod.Dev/     開発専用（Samples~ 同期。UPM には含めない）
+Assets/Editor/HeightFieldLod.Dev/     開発専用（Samples~ 同期スクリプト。UPM には含めない）
+Packages/.../Samples~/              **git 管理**（UPM サンプル配布用。リリース前に dev 同期）
 
 Assets/Samples/HeightField/           開発用サンプル（コンパイル時に Samples~ へ自動コピー）
   Editor/HeightFieldSceneSetup.cs     asmdef: HeightField.Samples.Editor

@@ -77,9 +77,6 @@ mono_crash.*
 *.unitypackage.meta
 *.app
 
-# Generated UPM distributable samples
-/Packages/jp.nobnak.heightfield-lod/Samples~/
-
 # Crashlytics generated file
 crashlytics-build.properties
 

@@ -1,0 +1,21 @@
+#pragma kernel CSMain
+
+RWTexture2D<float> _Height;
+float2 _WorldOrigin;
+float2 _PixelWorld;
+uint2 _TexSize;
+float _Amplitude;
+float _Frequency;
+float _Time;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _TexSize.x || id.y >= _TexSize.y)
+        return;
+
+    float2 worldXY = _WorldOrigin + (float2(id.xy) + 0.5) * _PixelWorld;
+    float h = _Amplitude * sin(worldXY.x * _Frequency + _Time)
+                    * cos(worldXY.y * _Frequency * 0.85 - _Time * 0.7);
+    _Height[id.xy] = h;
+}

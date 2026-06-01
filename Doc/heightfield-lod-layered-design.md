@@ -51,8 +51,9 @@ Same rule as [urp-heightfield-lod-design.md](urp-heightfield-lod-design.md#drawi
 ```text
 Packages/jp.nobnak.heightfield-lod/Runtime/   core (HeightFieldLod.asmdef)
 Assets/Samples/HeightField/                   dev samples + Editor/ (UPM sample source)
-Assets/Editor/HeightFieldLod.Dev/             dev-only: sync Samples → package `Samples~` on compile
-Packages/jp.nobnak.heightfield-lod/           Runtime only (no Editor; not published to consumers)
+Assets/Editor/HeightFieldLod.Dev/             dev-only: sync `Assets/Samples/HeightField` → `Packages/.../Samples~` on compile
+Packages/jp.nobnak.heightfield-lod/Samples~/  **tracked in git** for UPM sample import (refresh via dev sync before release)
+Packages/jp.nobnak.heightfield-lod/Runtime/   core (no Editor in published package)
 ```
 
 ---
