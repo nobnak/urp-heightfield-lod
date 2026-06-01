@@ -1,31 +1,23 @@
 using System;
 using System.IO;
+using HeightField;
+using HeightField.Samples;
 using HeightFieldLod;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace HeightFieldLod.Editor
+namespace HeightField.Samples.Editor
 {
     public static class HeightFieldSceneSetup
     {
         const string PackageRoot = "Packages/jp.nobnak.heightfield-lod";
-        const string SamplesAssembly = "HeightField.Samples";
         const string LitMaterialName = "HeightFieldLit";
 
         [MenuItem("GameObject/Height Field/Setup Sample Rig", false, 10)]
         static void SetupSampleRig()
         {
-            if (!TryResolveSampleTypes(out var sineType, out var bridgeType))
-            {
-                EditorUtility.DisplayDialog(
-                    "Height Field",
-                    "Import the Height Field sample (Package Manager → jp.nobnak.heightfield-lod → Samples) first.",
-                    "OK");
-                return;
-            }
-
             var sceneFolder = TryGetActiveSceneAssetFolder();
             if (sceneFolder == null)
                 return;
@@ -50,11 +42,11 @@ namespace HeightFieldLod.Editor
             rig.transform.position = Vector3.zero;
             rig.transform.rotation = Quaternion.identity;
 
-            var sine = Undo.AddComponent(rig, sineType);
+            var sine = Undo.AddComponent<SineHeightFieldSource>(rig);
             var host = Undo.AddComponent<HeightFieldLayoutHost>(rig);
             var compute = Undo.AddComponent<HeightFieldLodCompute>(rig);
             var drawer = Undo.AddComponent<HeightFieldChunkMeshDrawer>(rig);
-            Undo.AddComponent(rig, bridgeType);
+            Undo.AddComponent<HeightFieldBridge>(rig);
 
             var fill = FindSineHeightFillShader();
             var normalFromHeight = LoadPackageAsset<ComputeShader>("Runtime/Shaders/NormalFromHeight.compute");
@@ -84,7 +76,7 @@ namespace HeightFieldLod.Editor
             SetRef(drawer, "_heightSource", sine);
             SetRef(drawer, "_material", mat);
 
-            var bridge = rig.GetComponent(bridgeType);
+            var bridge = rig.GetComponent<HeightFieldBridge>();
             SetRef(bridge, "_layoutHost", host);
             SetRef(bridge, "_camera", cam);
             SetRef(bridge, "_heightSource", sine);
@@ -94,16 +86,6 @@ namespace HeightFieldLod.Editor
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             Selection.activeGameObject = rig;
             Debug.Log($"HeightField rig created. Assets folder: {sceneFolder}");
-        }
-
-        [MenuItem("GameObject/Height Field/Setup Sample Rig", true)]
-        static bool ValidateSetupSampleRig() => TryResolveSampleTypes(out _, out _);
-
-        static bool TryResolveSampleTypes(out Type sineType, out Type bridgeType)
-        {
-            sineType = Type.GetType($"HeightField.SineHeightFieldSource, {SamplesAssembly}");
-            bridgeType = Type.GetType($"HeightField.Samples.HeightFieldBridge, {SamplesAssembly}");
-            return sineType != null && bridgeType != null;
         }
 
         static string TryGetActiveSceneAssetFolder()
@@ -174,7 +156,7 @@ namespace HeightFieldLod.Editor
             var prop = so.FindProperty(propertyName);
             if (prop == null)
             {
-                Debug.LogWarning($"[HeightFieldLod] Property not found: {propertyName} on {target.GetType().Name}");
+                Debug.LogWarning($"[HeightField] Property not found: {propertyName} on {target.GetType().Name}");
                 return;
             }
             prop.objectReferenceValue = value;

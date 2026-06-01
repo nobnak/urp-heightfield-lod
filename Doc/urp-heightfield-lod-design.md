@@ -78,7 +78,7 @@ Doc/
 | `HeightField.Samples` | Sample height sources (Sine, Musgrave) |
 | `App` | Bridge; optional `HeadSwayLensShiftCamera` + `ViewMotion` |
 
-Editor menu: **GameObject → Height Field → Setup Sample Rig**.
+Editor menu (sample import required): **GameObject → Height Field → Setup Sample Rig** (`HeightField.Samples.Editor`).
 
 ---
 

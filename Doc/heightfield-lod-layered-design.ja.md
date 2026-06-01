@@ -118,12 +118,14 @@ flowchart TB
 | `HeightFieldLodCompute` | `HeightTex` | 入力（Compute は他 Compute を参照しない） |
 | `HeightField.Samples` | `IHeightFieldSource`（HeightFieldLod 契約） | サンプル Height 実装 |
 | `HeightField.Samples` | `HeightFieldLod` | asmdef 参照（Bridge 配線含む） |
+| `HeightField.Samples.Editor` | `HeightField.Samples`, `HeightFieldLod` | `Setup Sample Rig` メニュー |
 
 ### 依存ルール（コンパイル時）
 
 ```text
-HeightField.Samples → HeightFieldLod（契約のみ）
-HeightFieldLod      → Unity / URP のみ
+HeightField.Samples.Editor → HeightField.Samples, HeightFieldLod
+HeightField.Samples        → HeightFieldLod（契約のみ）
+HeightFieldLod             → Unity / URP のみ
 ```
 
 - **HeightFieldLod** は Samples の具象型を知らない（`IHeightFieldSource` のみ）。
@@ -146,9 +148,10 @@ HeightFieldLod      → Unity / URP のみ
 Packages/jp.nobnak.heightfield-lod/   UPM コア
   Runtime/                            asmdef: HeightFieldLod
     Contracts/, Layout/, Compute/, Draw/, Util/, Shaders/
-  Editor/                             asmdef: HeightFieldLod.Editor
+  Editor/                             asmdef: HeightFieldLod.Editor（Samples~ 同期のみ）
 
 Assets/Samples/HeightField/           開発用サンプル（コンパイル時に Samples~ へ自動コピー）
+  Editor/HeightFieldSceneSetup.cs     asmdef: HeightField.Samples.Editor
   Bridge/HeightFieldBridge.cs
   SineHeightFieldSource.cs, MusgraveHeightFieldSource.cs
   Shaders/, Scenes/, Materials/, …

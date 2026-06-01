@@ -79,7 +79,7 @@ Doc/
 | `HeightField.Samples` | サンプル Height 実装（Sine / Musgrave） |
 | `App` | Bridge、任意で `HeadSwayLensShiftCamera` + `ViewMotion` |
 
-エディタメニュー: **GameObject → Height Field → Setup Sample Rig**。
+エディタメニュー（サンプル Import 後）: **GameObject → Height Field → Setup Sample Rig**（`HeightField.Samples.Editor`）。
 
 ---
 

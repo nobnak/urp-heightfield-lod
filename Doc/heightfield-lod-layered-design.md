@@ -23,12 +23,14 @@ Assets/Samples/HeightField             sample height sources + HeightFieldBridge
 | --- | --- | --- |
 | **HeightFieldLod** | `HeightFieldLod` | `IHeightFieldSource`, `HeightFieldLayout`, `ILodSource`, LOD/draw |
 | **Samples** | `HeightField.Samples` | Sample height implementations, `HeightFieldBridge` |
+| **Samples.Editor** | `HeightField.Samples.Editor` | `Setup Sample Rig` menu (requires sample import) |
 
 ### Dependencies
 
 ```text
-HeightField.Samples → HeightFieldLod (contracts only)
-HeightFieldLod        → URP only
+HeightField.Samples.Editor → HeightField.Samples, HeightFieldLod
+HeightField.Samples        → HeightFieldLod (contracts only)
+HeightFieldLod               → URP only
 ```
 
 ---
@@ -48,7 +50,8 @@ Same rule as [urp-heightfield-lod-design.md](urp-heightfield-lod-design.md#drawi
 
 ```text
 Packages/jp.nobnak.heightfield-lod/Runtime/   core (HeightFieldLod.asmdef)
-Assets/Samples/HeightField/                   dev samples → auto-copied to Samples~ on compile (`HeightFieldSampleCompileSync`)
+Assets/Samples/HeightField/                   dev samples + Editor/ → auto-copied to Samples~ on compile (`HeightFieldSampleCompileSync`)
+Packages/jp.nobnak.heightfield-lod/Editor/   core-only (`HeightFieldSampleCompileSync`)
 ```
 
 ---
