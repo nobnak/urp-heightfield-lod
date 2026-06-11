@@ -2,6 +2,15 @@ using UnityEngine;
 
 namespace HeightField
 {
+    public enum MusgraveType
+    {
+        FBM = 0,
+        Multifractal = 1,
+        RidgedMultifractal = 2,
+        HybridMultifractal = 3,
+        HeterogeneousTerrain = 4,
+    }
+
     [DisallowMultipleComponent]
     public sealed class MusgraveHeightFieldSource : MonoBehaviour, IHeightFieldSource
     {
@@ -11,7 +20,9 @@ namespace HeightField
         [SerializeField] float _detail = 6f;
         [SerializeField] float _dimension = 1f;
         [SerializeField] float _lacunarity = 2f;
+        [SerializeField] MusgraveType _musgraveType = MusgraveType.FBM;
         [SerializeField] float _speed = 0.5f;
+        [SerializeField] float _zSpeed = 0.5f;
 
         RenderTexture _height;
         int _kernel = -1;
@@ -59,7 +70,9 @@ namespace HeightField
             _fillShader.SetFloat("_Detail", _detail);
             _fillShader.SetFloat("_Dimension", _dimension);
             _fillShader.SetFloat("_Lacunarity", _lacunarity);
+            _fillShader.SetFloat("_MusgraveType", (float)_musgraveType);
             _fillShader.SetFloat("_Time", time * _speed);
+            _fillShader.SetFloat("_TimeZ", time * _zSpeed);
             int gx = (layout.TexWidth + 7) / 8;
             int gy = (layout.TexHeight + 7) / 8;
             _fillShader.Dispatch(_kernel, gx, gy, 1);

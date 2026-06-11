@@ -1,6 +1,6 @@
 #pragma kernel CSMain
 
-#include "Packages/jp.nobnak.snoise/ShaderLibrary/Application/musgrave2D.hlsl"
+#include "Packages/jp.nobnak.snoise/ShaderLibrary/Application/musgrave3D.hlsl"
 
 RWTexture2D<float> _Height;
 float2 _WorldOrigin;
@@ -11,7 +11,9 @@ float _Scale;
 float _Detail;
 float _Dimension;
 float _Lacunarity;
+float _MusgraveType;
 float _Time;
+float _TimeZ;
 
 [numthreads(8, 8, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
@@ -20,8 +22,8 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         return;
 
     float2 worldXY = _WorldOrigin + (float2(id.xy) + 0.5) * _PixelWorld;
-    float2 p = worldXY + float2(_Time, _Time * 0.7);
+    float3 p = float3(worldXY + float2(_Time, _Time * 0.7), _TimeZ);
     float n, hi, lo;
-    Musgrave2D_float(p, _Scale, _Detail, _Dimension, _Lacunarity, (float)MUSGRAVE_FBM, n, hi, lo);
+    Musgrave3D_float(p, _Scale, _Detail, _Dimension, _Lacunarity, _MusgraveType, n, hi, lo);
     _Height[id.xy] = _Amplitude * n;
 }

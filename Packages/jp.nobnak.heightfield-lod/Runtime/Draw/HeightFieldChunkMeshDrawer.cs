@@ -7,26 +7,27 @@ namespace HeightFieldLod
     [DisallowMultipleComponent]
     public sealed class HeightFieldChunkMeshDrawer : MonoBehaviour
     {
-        [SerializeField] HeightFieldLayoutHost _layoutHost; 
-        [SerializeField] HeightFieldLodCompute _lod;
-        [SerializeField] MonoBehaviour _heightSource;
         [SerializeField] Material _material;
         [SerializeField] int _sortOrder;
         [SerializeField] bool _castShadows = true;
 
+        HeightFieldLayoutHost _layoutHost;
+        HeightFieldLodCompute _lod;
+        IHeightFieldSource _heightSource;
         HeightFieldLayout _layout;
         MaterialPropertyBlock _mpb;
 
-        IHeightFieldSource HeightSource => _heightSource as IHeightFieldSource;
         ILodSource Lod => _lod;
 
-        void Awake() => _mpb = new MaterialPropertyBlock();
-
-        void OnValidate()
+        void Awake()
         {
-            if (_heightSource != null && _heightSource is not IHeightFieldSource)
-                Debug.LogWarning($"{name}: _heightSource must implement {nameof(IHeightFieldSource)}.", this);
+            _mpb = new MaterialPropertyBlock();
+            ResolveRefs();
         }
+
+        void Reset() => ResolveRefs();
+
+        void OnValidate() => ResolveRefs();
 
         public void Configure(HeightFieldLayout layout)
         {
@@ -42,6 +43,7 @@ namespace HeightFieldLod
 
         void OnEnable()
         {
+            ResolveRefs();
             RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
         }
 
@@ -55,15 +57,21 @@ namespace HeightFieldLod
             if (layout.TexWidth <= 0 || Lod == null || _material == null)
                 return;
 
-            var heightSource = HeightSource;
-            if (heightSource != null)
-                heightSource.EnsureUpdated(layout, Time.time);
-            var height = heightSource != null ? heightSource.HeightTexture : Lod.HeightTexture;
+            if (_heightSource != null)
+                _heightSource.EnsureUpdated(layout, Time.time);
+            var height = _heightSource != null ? _heightSource.HeightTexture : Lod.HeightTexture;
             if (height == null) return;
 
             Lod.EnsureUpdated(layout, height);
             BindMaterialTextures(height, Lod.NormalTexture);
             DrawLayers(camera, layout);
+        }
+
+        void ResolveRefs()
+        {
+            _layoutHost = GetComponent<HeightFieldLayoutHost>();
+            _lod = GetComponent<HeightFieldLodCompute>();
+            _heightSource = HeightFieldRigUtil.FindHeightSource(gameObject);
         }
 
         HeightFieldLayout ResolveLayout()

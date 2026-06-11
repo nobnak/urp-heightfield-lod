@@ -71,17 +71,7 @@ namespace HeightField.Samples.Editor
             SetRef(compute, "_classifyShader", classify);
             SetRef(compute, "_neighborShader", neighbor);
             SetRef(host, "_camera", cam);
-            SetRef(drawer, "_layoutHost", host);
-            SetRef(drawer, "_lod", compute);
-            SetRef(drawer, "_heightSource", sine);
             SetRef(drawer, "_material", mat);
-
-            var bridge = rig.GetComponent<HeightFieldBridge>();
-            SetRef(bridge, "_layoutHost", host);
-            SetRef(bridge, "_camera", cam);
-            SetRef(bridge, "_heightSource", sine);
-            SetRef(bridge, "_lodCompute", compute);
-            SetRef(bridge, "_drawer", drawer);
 
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             Selection.activeGameObject = rig;
