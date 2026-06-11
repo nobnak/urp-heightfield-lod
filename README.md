@@ -1,8 +1,8 @@
 # urp-heightfield-lod
 
-[![Unity Editor 上でのサンプル映像](http://img.youtube.com/vi/xsMIZjyObbE/hqdefault.jpg)](https://youtu.be/xsMIZjyObbE)
-[![サンプル映像 2](http://img.youtube.com/vi/atnA-4gOfQI/hqdefault.jpg)](https://youtube.com/shorts/atnA-4gOfQI)
-[![サンプル映像 3](http://img.youtube.com/vi/kKyzijjkOc8/hqdefault.jpg)](https://youtube.com/shorts/kKyzijjkOc8)
+[![Unity Editor 上でのサンプル映像](http://img.youtube.com/vi/xsMIZjyObbE/mqdefault.jpg)](https://youtu.be/xsMIZjyObbE)
+[![サンプル映像 2](http://img.youtube.com/vi/atnA-4gOfQI/mqdefault.jpg)](https://youtube.com/shorts/atnA-4gOfQI)
+[![サンプル映像 3](http://img.youtube.com/vi/kKyzijjkOc8/mqdefault.jpg)](https://youtube.com/shorts/kKyzijjkOc8)
 
 ---
 
