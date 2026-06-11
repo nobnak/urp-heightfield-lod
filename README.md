@@ -1,6 +1,6 @@
 # urp-heightfield-lod
 
-[![Unity Editor 上でのサンプル映像](https://img.youtube.com/vi/xsMIZjyObbE/maxresdefault.jpg)](https://youtu.be/xsMIZjyObbE)
+[![Unity Editor 上でのサンプル映像](http://img.youtube.com/vi/xsMIZjyObbE/hqdefault.jpg)](https://youtu.be/xsMIZjyObbE)
 
 ---
 
