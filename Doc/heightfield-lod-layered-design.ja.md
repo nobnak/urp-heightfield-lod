@@ -142,6 +142,22 @@ HeightFieldLod             → Unity / URP のみ
 
 モード enum は使わない。Inspector の参照だけで表現する。
 
+### リポジトリ構成（開発用）
+
+```text
+urp-heightfield-lod/
+├── Packages/
+│   └── jp.nobnak.heightfield-lod/   # UPM コアパッケージ
+│       ├── package.json
+│       ├── Runtime/                   # asmdef: HeightFieldLod
+│       └── Samples~/                  # UPM サンプル配布用（git 管理）
+├── Assets/
+│   ├── Samples/HeightField/           # 開発用サンプル（コンパイル時に Samples~ へ同期）
+│   ├── Editor/HeightFieldLod.Dev/     # 開発専用（サンプル同期スクリプト）
+│   └── Scenes/                        # 検証シーン
+└── Doc/                               # 設計ドキュメント
+```
+
 ### フォルダ構成
 
 ```text
@@ -157,6 +173,34 @@ Assets/Samples/HeightField/           開発用サンプル（コンパイル時
   SineHeightFieldSource.cs, MusgraveHeightFieldSource.cs
   Shaders/, Scenes/, Materials/, …
   HeightField.Samples.asmdef          → HeightFieldLod
+```
+
+### パッケージ内部構造（`Runtime/`）
+
+```text
+Runtime/
+├── Contracts/          # 公開契約
+│   ├── IHeightFieldSource.cs   … 高さ RT の確保・更新
+│   ├── ILodSource.cs             … LOD 計算結果と描画バッファ
+│   └── HeightFieldLayout.cs      … テクスチャ・チャンク・ワールド寸法の単一の真実
+├── Layout/
+│   └── HeightFieldLayoutHost.cs  … カメラから Layout を生成
+├── Compute/
+│   └── HeightFieldLodCompute.cs  … 法線・曲率・LOD 分類・インスタンスリスト
+├── Draw/
+│   ├── HeightFieldChunkMeshDrawer.cs  … DrawMeshInstancedIndirect
+│   ├── ChunkMeshBuilder.cs            … LOD 段ごとのチャンクメッシュ構築
+│   └── ChunkInstanceData.cs
+├── Util/
+│   └── HeightFieldSourceUtil.cs  … EnsureUpdated（フレーム単位の重複更新防止）
+└── Shaders/
+    ├── NormalFromHeight.compute    … 高さから法線 RT
+    ├── Curvature.compute           … 曲率計算
+    ├── ReductionMax.compute        … max reduction
+    ├── ClassifyLOD.compute         … LOD 分類
+    ├── NeighborLOD.compute         … 隣接チャンク制約
+    ├── HeightFieldLit.shader       … URP Lit 相当
+    └── HeightFieldToon.shader      … トゥーンシェーダ
 ```
 
 ---

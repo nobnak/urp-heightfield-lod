@@ -46,6 +46,16 @@ Same rule as [urp-heightfield-lod-design.md](urp-heightfield-lod-design.md#drawi
 
 ---
 
+## Repository layout (development)
+
+```text
+urp-heightfield-lod/
+├── Packages/jp.nobnak.heightfield-lod/   # UPM core (package.json, Runtime/, Samples~/)
+├── Assets/Samples/HeightField/           # dev samples (synced to Samples~ on compile)
+├── Assets/Editor/HeightFieldLod.Dev/     # dev-only sample sync scripts
+└── Doc/                                  # design docs
+```
+
 ## Folder layout
 
 ```text
@@ -53,8 +63,23 @@ Packages/jp.nobnak.heightfield-lod/Runtime/   core (HeightFieldLod.asmdef)
 Assets/Samples/HeightField/                   dev samples + Editor/ (UPM sample source)
 Assets/Editor/HeightFieldLod.Dev/             dev-only: sync `Assets/Samples/HeightField` → `Packages/.../Samples~` on compile
 Packages/jp.nobnak.heightfield-lod/Samples~/  **tracked in git** for UPM sample import (refresh via dev sync before release)
-Packages/jp.nobnak.heightfield-lod/Runtime/   core (no Editor in published package)
 ```
+
+## Package internals (`Runtime/`)
+
+```text
+Runtime/
+├── Contracts/     IHeightFieldSource, ILodSource, HeightFieldLayout
+├── Layout/        HeightFieldLayoutHost
+├── Compute/       HeightFieldLodCompute
+├── Draw/          HeightFieldChunkMeshDrawer, ChunkMeshBuilder, ChunkInstanceData
+├── Util/          HeightFieldSourceUtil
+└── Shaders/       NormalFromHeight, Curvature, ReductionMax, ClassifyLOD, NeighborLOD,
+                   HeightFieldLit, HeightFieldToon
+```
+
+Typical rig: `HeightFieldLayoutHost`, `HeightFieldBridge`, an `IHeightFieldSource`, `HeightFieldLodCompute`, `HeightFieldChunkMeshDrawer`.  
+Updates are **pull**-driven from `beginCameraRendering` (`EnsureUpdated` per stage). See the [Japanese doc](heightfield-lod-layered-design.ja.md) for full detail.
 
 ---
 
