@@ -1,0 +1,49 @@
+# Unity UPM Package Release Rules
+
+This repo ships a Unity UPM package under `Packages/` (`Runtime/`, `Editor/`, `Tests/`, `Samples~/`, `Documentation~/`). Version is in `package.json`.
+
+## Release Workflow
+
+On release request, do not execute immediately.
+
+### 1. Analyze changes
+
+Inspect all modified files. Classify as: feature, fix, refactor, documentation, test, maintenance.
+
+### 2. Commit plan
+
+Group by logical purpose; prefer multiple focused commits over one large commit. Use Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `refactor:`, etc.).
+
+### 3. Version bump (SemVer)
+
+- **Patch**: bug fixes, docs, tests, internal refactor
+- **Minor**: new public APIs, new user-visible functionality
+- **Major**: breaking API changes, removed APIs, incompatible behavior
+
+Review Runtime public APIs carefully before proposing major.
+
+### 4. Update release files
+
+Prepare `package.json` and `CHANGELOG.md` (Keep a Changelog format).
+
+### 5. Present plan — await approval
+
+Show commit plan, version bump, changelog summary, and tag name. Do not commit, tag, or push until the user explicitly approves.
+
+### 6. Execute (after approval only)
+
+1. Create planned commits
+2. Update `package.json` and `CHANGELOG.md`
+3. Release commit: `chore(release): vX.Y.Z`
+4. Tag: `vX.Y.Z`
+5. Push commits and tags
+
+## Public API
+
+Treat as public API: public classes, interfaces, structs, methods, properties. Changes may require a minor or major bump.
+
+## Safety
+
+Never: skip changelog; bump major without explanation; push tags without approval; squash unrelated changes into one commit.
+
+Always explain the proposed version bump.
