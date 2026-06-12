@@ -347,7 +347,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 410087039}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.21442412, y: -0.18370248, z: 0.13257022, w: 0.9501057}
+  m_LocalRotation: {x: 0.5747504, y: 0.31120253, z: -0.19680573, w: 0.7308095}
   m_LocalPosition: {x: 4, y: 3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -554,7 +554,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1517204971}
   - component: {fileID: 1517204976}
-  - component: {fileID: 1517204968}
   - component: {fileID: 1517204975}
   - component: {fileID: 1517204974}
   - component: {fileID: 1517204973}
@@ -565,24 +564,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1517204968
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1517204967}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a59b12f0ed58c8845a36da4c4cdf6fe3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: HeightField.Samples::HeightField.Samples.HeightFieldBridge
-  _layoutHost: {fileID: 1517204975}
-  _camera: {fileID: 330585545}
-  _barrierChunks: 2
-  _heightSource: {fileID: 1517204976}
-  _lodCompute: {fileID: 1517204974}
-  _drawer: {fileID: 1517204973}
 --- !u!4 &1517204971
 Transform:
   m_ObjectHideFlags: 0
@@ -610,10 +591,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 69a9cba1ef1cc48478b182d5db8403ac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: HeightFieldLod::HeightFieldLod.HeightFieldChunkMeshDrawer
-  _layoutHost: {fileID: 1517204975}
-  _lod: {fileID: 1517204974}
-  _heightSource: {fileID: 1517204976}
-  _material: {fileID: 2100000, guid: 660fcee1fbd74304b9e206e30fb0e0ec, type: 2}
+  _material: {fileID: 2100000, guid: 4704fdd337825924794bb30fd61aa5a2, type: 2}
   _sortOrder: 0
   _castShadows: 0
 --- !u!114 &1517204974
@@ -634,7 +612,7 @@ MonoBehaviour:
   _classifyShader: {fileID: 7200000, guid: 4a562e269a1e3144c95edfb1d7bb9865, type: 3}
   _neighborShader: {fileID: 7200000, guid: 27dbdd2c6088c374a9a4465ae7ec8fba, type: 3}
   _skirtDepthMeters: 0.01
-  _curvatureScale: 0.1
+  _curvatureScale: 0.01
   _lodUpHigh: 0.7
   _lodUpMid: 0.4
   _lodUpLow: 0.15
@@ -655,6 +633,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: HeightFieldLod::HeightFieldLod.HeightFieldLayoutHost
   _camera: {fileID: 330585545}
   _barrierChunks: 2
+  _heightSourceBehaviour: {fileID: 1517204976}
+  _lodCompute: {fileID: 1517204974}
+  _drawers:
+  - {fileID: 1517204973}
 --- !u!114 &1517204976
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -668,14 +650,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: HeightField.Samples::HeightField.MusgraveHeightFieldSource
   _fillShader: {fileID: 7200000, guid: a7f2c8e19b3046d5a1e9f0b2c3d4e5f6, type: 3}
-  _amplitudeMeters: 0.3
-  _scale: 1
-  _detail: 6
+  _amplitudeMeters: 1
+  _scale: 0.1
+  _detail: 2
   _dimension: 1
   _lacunarity: 2
-  _musgraveType: 0
-  _speed: 0.1
-  _zSpeed: 0.5
+  _musgraveType: 2
+  _speed: 0.01
+  _zSpeed: 0.03
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

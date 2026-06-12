@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using HeightField;
-using HeightField.Samples;
 using HeightFieldLod;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -46,7 +45,6 @@ namespace HeightField.Samples.Editor
             var host = Undo.AddComponent<HeightFieldLayoutHost>(rig);
             var compute = Undo.AddComponent<HeightFieldLodCompute>(rig);
             var drawer = Undo.AddComponent<HeightFieldChunkMeshDrawer>(rig);
-            Undo.AddComponent<HeightFieldBridge>(rig);
 
             var fill = FindSineHeightFillShader();
             var normalFromHeight = LoadPackageAsset<ComputeShader>("Runtime/Shaders/NormalFromHeight.compute");
@@ -71,6 +69,9 @@ namespace HeightField.Samples.Editor
             SetRef(compute, "_classifyShader", classify);
             SetRef(compute, "_neighborShader", neighbor);
             SetRef(host, "_camera", cam);
+            SetRef(host, "_heightSourceBehaviour", sine);
+            SetRef(host, "_lodCompute", compute);
+            SetArrayRef(host, "_drawers", drawer);
             SetRef(drawer, "_material", mat);
 
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
@@ -150,6 +151,20 @@ namespace HeightField.Samples.Editor
                 return;
             }
             prop.objectReferenceValue = value;
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        static void SetArrayRef(Object target, string propertyName, Object value)
+        {
+            var so = new SerializedObject(target);
+            var prop = so.FindProperty(propertyName);
+            if (prop == null || !prop.isArray)
+            {
+                Debug.LogWarning($"[HeightField] Array property not found: {propertyName} on {target.GetType().Name}");
+                return;
+            }
+            prop.arraySize = 1;
+            prop.GetArrayElementAtIndex(0).objectReferenceValue = value;
             so.ApplyModifiedPropertiesWithoutUndo();
         }
     }

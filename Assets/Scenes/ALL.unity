@@ -734,7 +734,6 @@ GameObject:
   - component: {fileID: 1517204971}
   - component: {fileID: 1517204970}
   - component: {fileID: 1517204972}
-  - component: {fileID: 1517204968}
   - component: {fileID: 1517204975}
   - component: {fileID: 1517204974}
   - component: {fileID: 1517204973}
@@ -745,24 +744,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1517204968
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1517204967}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a59b12f0ed58c8845a36da4c4cdf6fe3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: HeightField.Samples::HeightField.Samples.HeightFieldBridge
-  _layoutHost: {fileID: 1517204975}
-  _camera: {fileID: 330585545}
-  _barrierChunks: 2
-  _heightSource: {fileID: 1517204972}
-  _lodCompute: {fileID: 1517204974}
-  _drawer: {fileID: 1517204973}
 --- !u!114 &1517204970
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -825,9 +806,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 69a9cba1ef1cc48478b182d5db8403ac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: HeightFieldLod::HeightFieldLod.HeightFieldChunkMeshDrawer
-  _layoutHost: {fileID: 1517204975}
-  _lod: {fileID: 1517204974}
-  _heightSource: {fileID: 1517204972}
   _material: {fileID: 2100000, guid: 48a2bd87b0740304398d70de4dc096f9, type: 2}
   _sortOrder: 0
   _castShadows: 0
@@ -870,6 +848,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: HeightFieldLod::HeightFieldLod.HeightFieldLayoutHost
   _camera: {fileID: 330585545}
   _barrierChunks: 2
+  _heightSourceBehaviour: {fileID: 1517204972}
+  _lodCompute: {fileID: 1517204974}
+  _drawers:
+  - {fileID: 1517204973}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
