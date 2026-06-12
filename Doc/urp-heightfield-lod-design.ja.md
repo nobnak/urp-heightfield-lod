@@ -85,7 +85,7 @@ Doc/
 
 # HeightFieldLayout（単一の真実の源）
 
-**`HeightFieldLod`**（`Contracts/`）で定義。**Bridge**（`HeightFieldBridge`）が生成し、Height / LOD に渡す。
+**`HeightFieldLod`**（`Contracts/`）で定義。**LayoutHost**（`HeightFieldLayoutHost`）が生成し、Height / LOD に渡す。
 
 ```csharp
 struct HeightFieldLayout
@@ -164,7 +164,7 @@ uvScale  = (32 / texW, 32 / texH)
 | リビルドしない | `lensShift`、位置・回転、カスタム `projectionMatrix` / `worldToCameraMatrix`（頭振りなど） |
 | LOD 指標 | 曲率 / 複雑度 — **カメラ距離ではない** |
 | 描画カメラ | `CameraType.Preview` 以外で、Rig の **レイヤー**（`gameObject.layer`）が `cullingMask` に含まれるカメラすべて |
-| Layout 用カメラ | `HeightFieldLayoutHost` / `HeightFieldBridge` の `_camera` は layout 生成専用。描画対象の限定には使わない |
+| Layout 用カメラ | `HeightFieldLayoutHost` の `_camera` は layout 生成専用。描画対象の限定には使わない |
 | 頭振り（任意） | 正射影カメラに `HeadSwayLensShiftCamera`。リグ Transform 固定で `ConvergingLensShift` が行列更新 — [頭部動揺カメラ](#頭部動揺カメラ任意) |
 
 ---
@@ -404,7 +404,7 @@ n ∝ (-∂h/∂x · pixelWorldY, -∂h/∂y · pixelWorldX, -pixelWorldX · pix
 
 詳細: [head-sway-lens-shift-camera.md](head-sway-lens-shift-camera.md)。
 
-`HeightFieldBridge` のリビルド条件には **含めない**（行列のみの変更）。
+`HeightFieldLayoutHost` のリビルド条件には **含めない**（行列のみの変更）。
 
 ---
 

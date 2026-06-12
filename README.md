@@ -42,7 +42,7 @@ Package Manager でパッケージ **jp.nobnak.heightfield-lod** を選択し、
 | --- | --- |
 | `SineHeightFieldSource` | 正弦波による高さフィールド |
 | `MusgraveHeightFieldSource` | Musgrave ノイズによる高さフィールド |
-| `HeightFieldBridge` | Rig コンポーネントの配線 |
+| `HeightFieldLayoutHost` | Rig の layout 生成・依存注入・初期化 |
 | `HeightField.unity` | デモシーン |
 
 インポート後、メニュー **GameObject → Height Field → Setup Sample Rig** で Rig を自動配置できます。

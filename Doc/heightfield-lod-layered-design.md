@@ -10,7 +10,7 @@
 ```text
 jp.nobnak.heightfield-lod (core UPM)   contracts + layout + compute + draw + shaders
         ▲
-Assets/Samples/HeightField             sample height sources + HeightFieldBridge
+Assets/Samples/HeightField             sample height sources
 ```
 
 **Pipeline:** Height `N` RTs → LOD `K` computes → Draw `M` drawers.
@@ -22,7 +22,7 @@ Assets/Samples/HeightField             sample height sources + HeightFieldBridge
 | Context | asmdef | Role |
 | --- | --- | --- |
 | **HeightFieldLod** | `HeightFieldLod` | `IHeightFieldSource`, `HeightFieldLayout`, `ILodSource`, LOD/draw |
-| **Samples** | `HeightField.Samples` | Sample height implementations, `HeightFieldBridge` |
+| **Samples** | `HeightField.Samples` | Sample height implementations |
 | **Samples.Editor** | `HeightField.Samples.Editor` | `Setup Sample Rig` menu (requires sample import) |
 
 ### Dependencies
@@ -42,7 +42,7 @@ Same rule as [urp-heightfield-lod-design.md](urp-heightfield-lod-design.md#drawi
 - Hook: `RenderPipelineManager.beginCameraRendering`
 - Draw on every camera except `CameraType.Preview` when `cullingMask` includes the rig **layer** (`gameObject.layer`)
 - Shadow passes use the same rule
-- `HeightFieldLayoutHost._camera` and `HeightFieldBridge._camera` are for **layout only**, not draw filtering
+- `HeightFieldLayoutHost._camera` is for **layout only**, not draw filtering
 
 ---
 
@@ -78,7 +78,7 @@ Runtime/
                    HeightFieldLit, HeightFieldToon
 ```
 
-Typical rig: `HeightFieldLayoutHost`, `HeightFieldBridge`, an `IHeightFieldSource`, `HeightFieldLodCompute`, `HeightFieldChunkMeshDrawer`.  
+Typical rig: `HeightFieldLayoutHost`, an `IHeightFieldSource`, `HeightFieldLodCompute`, `HeightFieldChunkMeshDrawer`.  
 Updates are **pull**-driven from `beginCameraRendering` (`EnsureUpdated` per stage). See the [Japanese doc](heightfield-lod-layered-design.ja.md) for full detail.
 
 ---

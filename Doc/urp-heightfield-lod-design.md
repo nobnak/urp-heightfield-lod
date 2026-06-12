@@ -84,7 +84,7 @@ Editor menu (sample import required): **GameObject → Height Field → Setup Sa
 
 # HeightFieldLayout (single source of truth)
 
-Defined in **`HeightFieldLod/Contracts`**. Created by **Bridge** / **LayoutHost** and passed to Height + LOD.
+Defined in **`HeightFieldLod/Contracts`**. Created by **LayoutHost** and passed to Height + LOD.
 
 ```csharp
 struct HeightFieldLayout
@@ -163,7 +163,7 @@ There is **no barrier LOD cap** (no `min(lod, barrierMaxLod)`). Outer chunks mus
 | No rebuild | `lensShift`, camera position/rotation, custom `projectionMatrix` / `worldToCameraMatrix` (e.g. head sway) |
 | LOD metric | Curvature / complexity — **not** camera distance |
 | Draw cameras | All cameras except `CameraType.Preview`, when `cullingMask` includes the rig **layer** (`gameObject.layer`) |
-| Layout camera | `HeightFieldLayoutHost` / `HeightFieldBridge` `_camera` is for layout generation only, not draw filtering |
+| Layout camera | `HeightFieldLayoutHost` `_camera` is for layout generation only, not draw filtering |
 | Head sway (optional) | `HeadSwayLensShiftCamera` on the ortho camera: rig Transform fixed; `ConvergingLensShift` updates view/projection — see [Head sway camera](#head-sway-camera-optional) |
 
 ---
@@ -402,7 +402,7 @@ Component: **`App.HeadSway.HeadSwayLensShiftCamera`** on the orthographic camera
 
 Detail: [head-sway-lens-shift-camera.md](head-sway-lens-shift-camera.md).
 
-Does not trigger `HeightFieldBridge` rebuild (projection / view matrix only).
+Does not trigger `HeightFieldLayoutHost` rebuild (projection / view matrix only).
 
 ---
 
